@@ -26,6 +26,10 @@ function sphotography_preview_param_map() {
     return array(
         'primary_color'        => array( 'sp_primary', 'hex' ),
         'night_mode'           => array( 'sp_night', 'enum', array( 'system', 'light', 'dark' ) ),
+        'map_region'           => array( 'sp_mapregion', 'enum', array( 'global', 'china' ) ),
+        'map_china_provider'   => array( 'sp_chinaprov', 'enum', array( 'tianditu', 'amap', 'tencent' ) ),
+        'map_china_type'       => array( 'sp_chinatype', 'enum', array( 'standard', 'satellite' ) ),
+        'map_tianditu_key'     => array( 'sp_tdtkey', 'token' ),
         'map_style'            => array( 'sp_mapstyle', 'enum', array( 'auto', 'satellite', 'terrain', 'voyager', 'watercolor', 'custom' ) ),
         'map_style_custom_url' => array( 'sp_mapurl', 'url' ),
         'marker_mode'          => array( 'sp_markermode', 'enum', array( 'droplet', 'tag', 'region' ) ),
@@ -60,6 +64,8 @@ function sphotography_maybe_preview_override( $key, $value ) {
             return in_array( $raw, $spec[2], true ) ? $raw : $value;
         case 'int':
             return min( max( (int) $raw, $spec[2] ), $spec[3] );
+        case 'token':
+            return preg_replace( '/[^A-Za-z0-9]/', '', (string) $raw );
     }
     return $value;
 }
@@ -353,6 +359,10 @@ function sphotography_localize_data() {
         'readingSpeedLatin' => (int) sphotography_get_mod( 'reading_speed_latin' ),
         'viewCounter'      => (bool) sphotography_get_mod( 'view_counter' ),
         'aiSummary'        => function_exists( 'sphotography_ai_summary_enabled' ) ? sphotography_ai_summary_enabled() : false,
+        'mapRegion'        => sphotography_get_mod( 'map_region' ),
+        'mapChinaProvider' => sphotography_get_mod( 'map_china_provider' ),
+        'mapChinaType'     => sphotography_get_mod( 'map_china_type' ),
+        'mapTiandituKey'   => sphotography_get_mod( 'map_tianditu_key' ),
         'mapStyle'         => sphotography_get_mod( 'map_style' ),
         'mapStyleCustomUrl' => sphotography_get_mod( 'map_style_custom_url' ),
         // Motion personality (v1.2.5) — raw picker values; app.js resolves them.

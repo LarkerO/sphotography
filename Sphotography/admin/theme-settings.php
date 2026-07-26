@@ -62,6 +62,12 @@ function sphotography_get_default_settings() {
         'reading_speed_latin' => 200,
         'view_counter'        => true,      // 阅读量计数器（默认开）
         // ⑦ Map Style
+        // 地图区域分支：global = 国外供应商（沿用 map_style 预设）；
+        // china = 国内合规供应商（天地图 / 高德 / 腾讯）。
+        'map_region'          => 'global',
+        'map_china_provider'  => 'tianditu', // tianditu | amap | tencent
+        'map_china_type'      => 'standard', // standard | satellite
+        'map_tianditu_key'    => '',         // 天地图 tk（前端公开密钥，随瓦片 URL 走）
         'map_style'           => 'auto',
         'map_style_custom_url' => '',
         // ⑦b Marker mode & styling (v1.2.6)
@@ -213,6 +219,17 @@ function sphotography_sanitize_settings( $input ) {
     }
 
     // ⑦ Map Style
+    // Region branch + China provider/type + Tianditu key.
+    $allowed_map_region = array( 'global', 'china' );
+    $sanitized['map_region'] = in_array( $input['map_region'], $allowed_map_region, true ) ? $input['map_region'] : $defaults['map_region'];
+    $allowed_china_provider = array( 'tianditu', 'amap', 'tencent' );
+    $sanitized['map_china_provider'] = in_array( $input['map_china_provider'], $allowed_china_provider, true ) ? $input['map_china_provider'] : $defaults['map_china_provider'];
+    $allowed_china_type = array( 'standard', 'satellite' );
+    $sanitized['map_china_type'] = in_array( $input['map_china_type'], $allowed_china_type, true ) ? $input['map_china_type'] : $defaults['map_china_type'];
+    // Tianditu tk is a public front-end key embedded in tile URLs; keep only
+    // token-safe chars, no encryption needed.
+    $sanitized['map_tianditu_key'] = preg_replace( '/[^A-Za-z0-9]/', '', (string) $input['map_tianditu_key'] );
+
     $allowed_map_style = array( 'auto', 'satellite', 'terrain', 'voyager', 'watercolor', 'custom' );
     $sanitized['map_style'] = in_array( $input['map_style'], $allowed_map_style, true ) ? $input['map_style'] : $defaults['map_style'];
     // MapLibre fetches this style JSON client-side, so require https to avoid
@@ -1202,8 +1219,18 @@ function sphotography_render_settings_page() {
                 </div>
                 <div class="sphotography-module-body">
 
-                    <!-- Style preset -->
+                    <!-- Region branch: global (overseas) vs china (compliant domestic) -->
                     <div class="sphotography-field">
+                        <label class="sphotography-label" for="sphotography-map-region"><?php _e( '地图区域', 'sphotography' ); ?></label>
+                        <select id="sphotography-map-region" name="sphotography[map_region]">
+                            <option value="global" <?php selected( $values['map_region'], 'global' ); ?>><?php _e( '国外（OpenStreetMap 系底图，全球覆盖）', 'sphotography' ); ?></option>
+                            <option value="china" <?php selected( $values['map_region'], 'china' ); ?>><?php _e( '国内（合规供应商，中国大陆推荐）', 'sphotography' ); ?></option>
+                        </select>
+                        <p class="sphotography-desc"><?php _e( 'OpenStreetMap / CartoDB 等底图在中国大陆无测绘备案资质。若站点主要面向中国大陆访客，请选择「国内」并使用下方合规供应商。照片坐标（EXIF GPS，WGS-84）会在使用高德 / 腾讯底图时自动纠偏对齐，无需手动处理。', 'sphotography' ); ?></p>
+                    </div>
+
+                    <!-- Style preset (global branch) -->
+                    <div class="sphotography-field sp-region-field" data-sp-region="global">
                         <label class="sphotography-label" for="sphotography-map-style"><?php _e( '底图样式', 'sphotography' ); ?></label>
                         <select id="sphotography-map-style" name="sphotography[map_style]">
                             <option value="auto" <?php selected( $values['map_style'], 'auto' ); ?>><?php _e( '自动（跟随夜间模式，默认）', 'sphotography' ); ?></option>
@@ -1217,8 +1244,8 @@ function sphotography_render_settings_page() {
                         <p class="sphotography-desc" style="color:#e0a800;"><?php _e( '注意：「复古水彩」由 Stadia Maps 托管，正式站点需在 Stadia 免费注册并添加你的域名后方可正常加载（本地开发无需注册）。', 'sphotography' ); ?></p>
                     </div>
 
-                    <!-- Custom style URL (revealed when style = custom) -->
-                    <div class="sphotography-field sphotography-custom-mapstyle-field" style="<?php echo $values['map_style'] === 'custom' ? '' : 'display:none;'; ?>">
+                    <!-- Custom style URL (global branch, revealed when style = custom) -->
+                    <div class="sphotography-field sphotography-custom-mapstyle-field sp-region-field" data-sp-region="global" style="<?php echo ( $values['map_region'] === 'global' && $values['map_style'] === 'custom' ) ? '' : 'display:none;'; ?>">
                         <label class="sphotography-label" for="sphotography-map-style-custom-url"><?php _e( '自定义 style JSON URL', 'sphotography' ); ?></label>
                         <input type="url"
                                id="sphotography-map-style-custom-url"
@@ -1226,6 +1253,40 @@ function sphotography_render_settings_page() {
                                value="<?php echo esc_attr( $values['map_style_custom_url'] ); ?>"
                                placeholder="https://example.com/style.json">
                         <p class="sphotography-desc"><?php _e( '粘贴任意 MapLibre 兼容的 style JSON 地址（必须为 https）。留空或加载失败时将自动回退到「自动」底图。', 'sphotography' ); ?></p>
+                    </div>
+
+                    <!-- China branch: provider -->
+                    <div class="sphotography-field sp-region-field" data-sp-region="china">
+                        <label class="sphotography-label" for="sphotography-map-china-provider"><?php _e( '国内供应商', 'sphotography' ); ?></label>
+                        <select id="sphotography-map-china-provider" name="sphotography[map_china_provider]">
+                            <option value="tianditu" <?php selected( $values['map_china_provider'], 'tianditu' ); ?>><?php _e( '天地图（国家平台，备案资质最稳，推荐）', 'sphotography' ); ?></option>
+                            <option value="amap" <?php selected( $values['map_china_provider'], 'amap' ); ?>><?php _e( '高德地图', 'sphotography' ); ?></option>
+                            <option value="tencent" <?php selected( $values['map_china_provider'], 'tencent' ); ?>><?php _e( '腾讯地图', 'sphotography' ); ?></option>
+                        </select>
+                        <p class="sphotography-desc"><?php _e( '天地图为国家地理信息公共服务平台，坐标系与照片 GPS 一致、无偏移，需下方免费密钥。高德 / 腾讯坐标系为 GCJ-02，主题会自动纠偏照片位置。', 'sphotography' ); ?></p>
+                        <p class="sphotography-desc sp-china-provider-note" data-sp-provider="amap tencent" style="color:#e0a800;<?php echo in_array( $values['map_china_provider'], array( 'amap', 'tencent' ), true ) ? '' : 'display:none;'; ?>"><?php _e( '注意：直接调用高德 / 腾讯的瓦片地址属其官方服务条款的灰色地带，个人小站通常可用，但严格合规应申请对应开放平台的 Key 并遵守其 ToS。若追求最稳妥的合规路径，请使用天地图。', 'sphotography' ); ?></p>
+                    </div>
+
+                    <!-- China branch: map type -->
+                    <div class="sphotography-field sp-region-field" data-sp-region="china">
+                        <label class="sphotography-label" for="sphotography-map-china-type"><?php _e( '地图类型', 'sphotography' ); ?></label>
+                        <select id="sphotography-map-china-type" name="sphotography[map_china_type]">
+                            <option value="standard" <?php selected( $values['map_china_type'], 'standard' ); ?>><?php _e( '标准地图（含注记）', 'sphotography' ); ?></option>
+                            <option value="satellite" <?php selected( $values['map_china_type'], 'satellite' ); ?>><?php _e( '卫星影像（含注记）', 'sphotography' ); ?></option>
+                        </select>
+                        <p class="sphotography-desc"><?php _e( '国内三家供应商均无原生深色底图。选「标准地图」时，夜间模式为深色（或跟随系统且系统为深色）会自动对底图施加反相「伪深色」滤镜以贴合暗色界面；选「卫星影像」时不反相（影像反相会失真），固定使用原始配色。', 'sphotography' ); ?></p>
+                    </div>
+
+                    <!-- China branch: Tianditu key (only when provider = tianditu) -->
+                    <div class="sphotography-field sp-china-provider-field" data-sp-provider="tianditu" style="<?php echo ( $values['map_region'] === 'china' && $values['map_china_provider'] === 'tianditu' ) ? '' : 'display:none;'; ?>">
+                        <label class="sphotography-label" for="sphotography-map-tianditu-key"><?php _e( '天地图密钥（tk）', 'sphotography' ); ?></label>
+                        <input type="text"
+                               id="sphotography-map-tianditu-key"
+                               name="sphotography[map_tianditu_key]"
+                               value="<?php echo esc_attr( $values['map_tianditu_key'] ); ?>"
+                               placeholder="<?php esc_attr_e( '在 tianditu.gov.cn 免费申请的浏览器端 tk', 'sphotography' ); ?>"
+                               autocomplete="off" spellcheck="false">
+                        <p class="sphotography-desc"><?php _e( '前往 <a href="https://console.tianditu.gov.cn/api/key" target="_blank" rel="noopener">天地图控制台</a> 免费注册并创建「浏览器端」应用，将获得的 tk 填入此处。该密钥为前端公开密钥（会出现在瓦片请求地址中），无需保密。留空时天地图无法加载，将自动回退到国外「自动」底图。', 'sphotography' ); ?></p>
                     </div>
                 </div>
             </div>

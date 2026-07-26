@@ -84,6 +84,10 @@
             var params = {
                 sp_primary: $('.sphotography-color-picker').val(),
                 sp_night: $('#sphotography-night-mode').val(),
+                sp_mapregion: $('#sphotography-map-region').val(),
+                sp_chinaprov: $('#sphotography-map-china-provider').val(),
+                sp_chinatype: $('#sphotography-map-china-type').val(),
+                sp_tdtkey: $('#sphotography-map-tianditu-key').val(),
                 sp_mapstyle: $('#sphotography-map-style').val(),
                 sp_mapurl: $('#sphotography-map-style-custom-url').val(),
                 sp_markermode: $('#sphotography-marker-mode').val(),
@@ -111,7 +115,7 @@
         if ($preview.length && $frame.length) {
             $frame.on('load', function () { $preview.removeClass('is-refreshing'); });
             // Reload when any map-related control changes.
-            $('#sphotography-night-mode, #sphotography-map-style, #sphotography-map-style-custom-url, #sphotography-marker-mode, #sphotography-cluster-radius, #sphotography-droplet-goo-strength, #sphotography-region-granularity, #sphotography-region-intensity')
+            $('#sphotography-night-mode, #sphotography-map-region, #sphotography-map-china-provider, #sphotography-map-china-type, #sphotography-map-tianditu-key, #sphotography-map-style, #sphotography-map-style-custom-url, #sphotography-marker-mode, #sphotography-cluster-radius, #sphotography-droplet-goo-strength, #sphotography-region-granularity, #sphotography-region-intensity')
                 .on('change input', reloadPreview);
             // Initial load.
             $preview.addClass('is-refreshing');
@@ -139,9 +143,37 @@
             $('.sphotography-custom-date-field').toggle($(this).val() === 'custom');
         });
 
-        $('#sphotography-map-style').on('change', function () {
-            $('.sphotography-custom-mapstyle-field').toggle($(this).val() === 'custom');
-        });
+        // Map region branch (global vs china) + China provider sub-fields.
+        // The custom-style URL field belongs to the global branch AND only shows
+        // when style = custom; the Tianditu key belongs to china + provider =
+        // tianditu; the amap/tencent grey-area note shows for those providers.
+        var $mapRegion = $('#sphotography-map-region');
+        var $mapStyle = $('#sphotography-map-style');
+        var $chinaProvider = $('#sphotography-map-china-provider');
+        function applyMapBranch() {
+            var region = $mapRegion.val();
+            var provider = $chinaProvider.val();
+            // Region-scoped fields.
+            $('.sp-region-field').each(function () {
+                $(this).toggle(String($(this).data('sp-region')) === region);
+            });
+            // Custom-style URL: global branch only, and only when style=custom.
+            $('.sphotography-custom-mapstyle-field')
+                .toggle(region === 'global' && $mapStyle.val() === 'custom');
+            // Provider-scoped fields (Tianditu key) + provider notes.
+            $('.sp-china-provider-field').each(function () {
+                var providers = String($(this).data('sp-provider') || '').split(/\s+/);
+                $(this).toggle(region === 'china' && providers.indexOf(provider) !== -1);
+            });
+            $('.sp-china-provider-note').each(function () {
+                var providers = String($(this).data('sp-provider') || '').split(/\s+/);
+                $(this).toggle(region === 'china' && providers.indexOf(provider) !== -1);
+            });
+        }
+        $mapStyle.on('change', applyMapBranch);
+        $mapRegion.on('change', applyMapBranch);
+        $chinaProvider.on('change', applyMapBranch);
+        if ($mapRegion.length) { applyMapBranch(); }
 
         // Marker mode (v1.2.6): show only the fields relevant to the chosen
         // mode. Each mode-specific field carries data-sp-mode="a b" listing the

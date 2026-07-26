@@ -55,6 +55,203 @@
     }
 
     // ---------------------------------------------------------------
+    // China basemap providers (国内合规底图) + coordinate system
+    //
+    // OpenStreetMap/CartoDB have no surveying licence for mainland China, so a
+    // "china" region branch offers compliant domestic providers. Two of them
+    // (Amap/高德, Tencent/腾讯) render in the GCJ-02 datum, which is offset from
+    // the raw WGS-84 GPS stored in photo EXIF by ~100–700m. Tianditu (天地图)
+    // uses CGCS2000 (≈WGS-84), so it needs no offset.
+    //
+    // When a GCJ-02 provider is active we transform every WGS-84 coordinate to
+    // GCJ-02 *once*, at the single point they enter the map (buildGeoJSON… and
+    // the region polygons), and keep the original WGS-84 in feature properties
+    // for readouts / reverse-geocoding. See wgs84ToGcj02 + chinaNeedsGcj below.
+    // ---------------------------------------------------------------
+    var GCJ_A = 6378245.0;              // Krasovsky 1940 semi-major axis
+    var GCJ_EE = 0.00669342162296594323; // eccentricity squared
+
+    function outOfChina(lng, lat) {
+        // Rough mainland-China bbox; outside it the GCJ-02 offset is not applied
+        // (matches how domestic map services leave foreign coords untouched).
+        return (lng < 72.004 || lng > 137.8347 || lat < 0.8293 || lat > 55.8271);
+    }
+    function gcjTransformLat(x, y) {
+        var ret = -100.0 + 2.0 * x + 3.0 * y + 0.2 * y * y + 0.1 * x * y + 0.2 * Math.sqrt(Math.abs(x));
+        ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(y * Math.PI) + 40.0 * Math.sin(y / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (160.0 * Math.sin(y / 12.0 * Math.PI) + 320 * Math.sin(y * Math.PI / 30.0)) * 2.0 / 3.0;
+        return ret;
+    }
+    function gcjTransformLng(x, y) {
+        var ret = 300.0 + x + 2.0 * y + 0.1 * x * x + 0.1 * x * y + 0.1 * Math.sqrt(Math.abs(x));
+        ret += (20.0 * Math.sin(6.0 * x * Math.PI) + 20.0 * Math.sin(2.0 * x * Math.PI)) * 2.0 / 3.0;
+        ret += (20.0 * Math.sin(x * Math.PI) + 40.0 * Math.sin(x / 3.0 * Math.PI)) * 2.0 / 3.0;
+        ret += (150.0 * Math.sin(x / 12.0 * Math.PI) + 300.0 * Math.sin(x / 30.0 * Math.PI)) * 2.0 / 3.0;
+        return ret;
+    }
+    // WGS-84 [lng,lat] → GCJ-02 [lng,lat]. Returns a fresh array.
+    function wgs84ToGcj02(lng, lat) {
+        if (outOfChina(lng, lat)) return [lng, lat];
+        var dLat = gcjTransformLat(lng - 105.0, lat - 35.0);
+        var dLng = gcjTransformLng(lng - 105.0, lat - 35.0);
+        var radLat = lat / 180.0 * Math.PI;
+        var magic = Math.sin(radLat);
+        magic = 1 - GCJ_EE * magic * magic;
+        var sqrtMagic = Math.sqrt(magic);
+        dLat = (dLat * 180.0) / ((GCJ_A * (1 - GCJ_EE)) / (magic * sqrtMagic) * Math.PI);
+        dLng = (dLng * 180.0) / (GCJ_A / sqrtMagic * Math.cos(radLat) * Math.PI);
+        return [lng + dLng, lat + dLat];
+    }
+
+    // True when the active China provider renders in GCJ-02 (Amap/Tencent) and
+    // photo coordinates therefore need the WGS-84→GCJ-02 shift. Tianditu → false.
+    function chinaNeedsGcj() {
+        if ((SETTINGS.mapRegion || 'global') !== 'china') return false;
+        var p = SETTINGS.mapChinaProvider || 'tianditu';
+        return p === 'amap' || p === 'tencent';
+    }
+
+    // Convert raw WGS-84 [lng,lat] to the active basemap's datum: shifted to
+    // GCJ-02 under Amap/Tencent, unchanged otherwise. Use whenever a WGS-84
+    // coordinate needs to be placed on / flown to on the map.
+    function toMapCoords(lng, lat) {
+        return chinaNeedsGcj() ? wgs84ToGcj02(lng, lat) : [lng, lat];
+    }
+
+    // Recover a feature's original WGS-84 [lng,lat] — from the wgsLng/wgsLat we
+    // stash in properties (present under GCJ providers), else its geometry
+    // (which is already WGS-84 in global / Tianditu modes).
+    function featureWgsCoords(f) {
+        var p = (f && f.properties) || {};
+        if (typeof p.wgsLng === 'number' && typeof p.wgsLat === 'number') {
+            return [p.wgsLng, p.wgsLat];
+        }
+        return (f && f.geometry && f.geometry.coordinates) ? f.geometry.coordinates.slice() : null;
+    }
+
+    // --- Provider tile styles ---
+    function tiandituStyle() {
+        var key = (SETTINGS.mapTiandituKey || '').trim();
+        if (!key) return null; // no key → caller falls back to auto (global) style
+        var sat = (SETTINGS.mapChinaType === 'satellite');
+        var base = sat ? 'img' : 'vec';   // 影像 / 矢量
+        var anno = sat ? 'cia' : 'cva';   // 影像注记 / 矢量注记
+        var subs = ['0', '1', '2', '3', '4', '5', '6', '7'];
+        function layer(t) {
+            return subs.map(function (s) {
+                return 'https://t' + s + '.tianditu.gov.cn/' + t + '_w/wmts'
+                    + '?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=' + t
+                    + '&STYLE=default&TILEMATRIXSET=w&FORMAT=tiles'
+                    + '&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&tk=' + encodeURIComponent(key);
+            });
+        }
+        return {
+            version: 8,
+            sources: {
+                'sp-td-base': { type: 'raster', tiles: layer(base), tileSize: 256, maxzoom: 18, attribution: '© 天地图 GS(2023)336号' },
+                'sp-td-anno': { type: 'raster', tiles: layer(anno), tileSize: 256, maxzoom: 18 },
+            },
+            layers: [
+                { id: 'sp-td-base', type: 'raster', source: 'sp-td-base' },
+                { id: 'sp-td-anno', type: 'raster', source: 'sp-td-anno' },
+            ],
+        };
+    }
+    function amapStyle() {
+        var sat = (SETTINGS.mapChinaType === 'satellite');
+        var subs = ['1', '2', '3', '4'];
+        if (!sat) {
+            // 标准矢量含注记：style=7 (road net + labels baked in).
+            return rasterStyle(
+                subs.map(function (s) {
+                    return 'https://webrd0' + s + '.is.autonavi.com/appmaptile'
+                        + '?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}';
+                }),
+                '© 高德地图 AutoNavi', 18
+            );
+        }
+        // 卫星影像 (style=6) + 路网注记叠加 (style=8).
+        return {
+            version: 8,
+            sources: {
+                'sp-amap-img': { type: 'raster', tileSize: 256, maxzoom: 18, attribution: '© 高德地图 AutoNavi',
+                    tiles: subs.map(function (s) { return 'https://webst0' + s + '.is.autonavi.com/appmaptile?style=6&x={x}&y={y}&z={z}'; }) },
+                'sp-amap-anno': { type: 'raster', tileSize: 256, maxzoom: 18,
+                    tiles: subs.map(function (s) { return 'https://webst0' + s + '.is.autonavi.com/appmaptile?lang=zh_cn&size=1&scale=1&style=8&x={x}&y={y}&z={z}'; }) },
+            },
+            layers: [
+                { id: 'sp-amap-img', type: 'raster', source: 'sp-amap-img' },
+                { id: 'sp-amap-anno', type: 'raster', source: 'sp-amap-anno' },
+            ],
+        };
+    }
+    function tencentStyle() {
+        var sat = (SETTINGS.mapChinaType === 'satellite');
+        var subs = ['0', '1', '2', '3'];
+        if (!sat) {
+            // Standard tiles use TMS (bottom-origin Y) → {-y}.
+            return rasterStyle(
+                subs.map(function (s) {
+                    return 'https://rt' + s + '.map.gtimg.com/tile'
+                        + '?z={z}&x={x}&y={-y}&type=vector&styleid=0';
+                }),
+                '© 腾讯地图 Tencent', 18
+            );
+        }
+        // Satellite imagery (sateTiles) + label overlay (vector styleid=3), both TMS.
+        return {
+            version: 8,
+            sources: {
+                'sp-tx-img': { type: 'raster', tileSize: 256, maxzoom: 18, scheme: 'tms', attribution: '© 腾讯地图 Tencent',
+                    tiles: subs.map(function (s) { return 'https://p' + s + '.map.gtimg.com/sateTiles/{z}/{x}/{y}.jpg?version=400'; }) },
+                'sp-tx-anno': { type: 'raster', tileSize: 256, maxzoom: 18,
+                    tiles: subs.map(function (s) { return 'https://rt' + s + '.map.gtimg.com/tile?z={z}&x={x}&y={-y}&type=vector&styleid=3'; }) },
+            },
+            layers: [
+                { id: 'sp-tx-img', type: 'raster', source: 'sp-tx-img' },
+                { id: 'sp-tx-anno', type: 'raster', source: 'sp-tx-anno' },
+            ],
+        };
+    }
+    // Resolve the active China provider to a MapLibre style, or null to fall
+    // back to the global auto style (e.g. Tianditu with no key).
+    function chinaStyle() {
+        switch (SETTINGS.mapChinaProvider || 'tianditu') {
+            case 'amap':    return amapStyle();
+            case 'tencent': return tencentStyle();
+            case 'tianditu':
+            default:        return tiandituStyle();
+        }
+    }
+
+    // --- Pseudo-dark for China basemaps ---
+    // None of the domestic providers expose a dark raster tileset, so when the
+    // resolved theme is dark we invert the map canvas to fake a night basemap
+    // (the same trick Baidu/Amap SDKs use internally). Only the WebGL canvas is
+    // filtered — HTML overlays (droplets, pulse dot, popups, panels) sit above
+    // it untouched. Satellite imagery is excluded (inverting a photo looks
+    // wrong), so pseudo-dark applies to the "standard" map type only.
+    var CHINA_DARK_FILTER = 'invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9)';
+
+    function chinaPseudoDarkActive() {
+        if ((SETTINGS.mapRegion || 'global') !== 'china') return false;
+        if (usingAutoStyle()) return false;             // no key → global auto handles dark
+        if (state.styleFellBack) return false;          // provider tiles failed → global fallback is rendered, don't invert it
+        if (SETTINGS.mapChinaType === 'satellite') return false; // don't invert imagery
+        return !resolveMapIsLight();                    // only when theme resolves to dark
+    }
+
+    // Apply / clear the invert filter on the map canvas to match the current
+    // resolved lightness. Safe to call before the map exists (no-op).
+    function applyChinaDarkFilter() {
+        if (!state.map || typeof state.map.getCanvas !== 'function') return;
+        var canvas = state.map.getCanvas();
+        if (!canvas) return;
+        canvas.style.filter = chinaPseudoDarkActive() ? CHINA_DARK_FILTER : '';
+    }
+
+    // ---------------------------------------------------------------
     // Night mode (v1.3.2)
     //
     // The three-way switch (light / dark / follow-system) overrides the
@@ -95,6 +292,11 @@
     // Is the effective basemap the auto (night-mode) style? True for the "auto"
     // preset and for "custom" with an empty/invalid URL (which falls back).
     function usingAutoStyle() {
+        // China branch: only "auto" (night-mode-driven) when its provider style
+        // is unavailable (Tianditu with no key falls back to the global auto).
+        if ((SETTINGS.mapRegion || 'global') === 'china') {
+            return chinaStyle() === null;
+        }
         var choice = SETTINGS.mapStyle || 'auto';
         if (choice === 'auto') return true;
         if (choice === 'custom') return customStyleUrl() === '';
@@ -104,6 +306,10 @@
     // Resolve the configured style to a MapLibre `style` value: a hosted URL
     // string, or an inline style object for the raster presets.
     function getMapStyle() {
+        // China region branch takes precedence over the global map_style preset.
+        if ((SETTINGS.mapRegion || 'global') === 'china') {
+            return chinaStyle() || autoStyle(); // null (e.g. no Tianditu key) → auto
+        }
         switch (SETTINGS.mapStyle || 'auto') {
             case 'satellite':  return satelliteStyle();
             case 'terrain':    return terrainStyle();
@@ -317,7 +523,29 @@
 
     // Partition photos into region-matched (grouped by id) and unmatched (kept
     // for the droplet fallback source). Builds the render FeatureCollection.
+    // Deep-convert a Polygon/MultiPolygon's coordinates WGS-84 → GCJ-02 in place.
+    function gcjShiftGeometry(geom) {
+        if (!geom || !geom.coordinates) return;
+        var polys = (geom.type === 'Polygon') ? [geom.coordinates] : geom.coordinates;
+        polys.forEach(function (poly) {
+            poly.forEach(function (ring) {
+                for (var i = 0; i < ring.length; i++) {
+                    var c = wgs84ToGcj02(ring[i][0], ring[i][1]);
+                    ring[i][0] = c[0]; ring[i][1] = c[1];
+                }
+            });
+        });
+    }
+    // One-time: shift the boundary polygons to GCJ-02 so region fills align with
+    // an Amap/Tencent basemap. No-op for Tianditu / global (WGS-84 basemaps).
+    function ensureRegionGeoDatum() {
+        if (REGION.geoConverted || !chinaNeedsGcj()) return;
+        (REGION.geo.features || []).forEach(function (f) { gcjShiftGeometry(f.geometry); });
+        REGION.geoConverted = true;
+    }
+
     function buildRegionData() {
+        ensureRegionGeoDatum();
         REGION.byId = {};
         REGION.photos = {};
         REGION.centroids = {};
@@ -650,17 +878,24 @@
     // ---------------------------------------------------------------
     function buildGeoJSONFromMarkers(markers) {
         var features = [];
+        var needGcj = chinaNeedsGcj();
         (markers || []).forEach(function (m) {
             var lat = parseFloat(m.latitude) || 0;
             var lng = parseFloat(m.longitude) || 0;
             if (lat === 0 && lng === 0) return;
 
+            // Under a GCJ-02 provider, plot at the shifted position so markers
+            // align with the basemap; keep the raw WGS-84 for readouts and
+            // reverse-geocoding (which must use true GPS).
+            var coords = needGcj ? wgs84ToGcj02(lng, lat) : [lng, lat];
             var tags = Array.isArray(m.tags) ? m.tags : [];
             features.push({
                 type: 'Feature',
-                geometry: { type: 'Point', coordinates: [lng, lat] },
+                geometry: { type: 'Point', coordinates: coords },
                 properties: {
                     id: m.id,
+                    wgsLng: lng,
+                    wgsLat: lat,
                     postId: (m.post_id !== undefined ? m.post_id : m.postId) || null,
                     postTitle: m.post_title || m.postTitle || '',
                     title: m.title || m.post_title || 'Untitled',
@@ -743,7 +978,24 @@
         if (usingAutoStyle() && resolveMapIsLight() !== wasLight) {
             reapplyAutoStyle();
         }
+        // China basemaps have no dark tiles → toggle the pseudo-dark canvas
+        // filter to match the new resolved lightness.
+        applyChinaDarkFilter();
     }
+
+    // In "system" mode, follow live OS light/dark changes: re-apply the auto
+    // basemap (global) and/or the China pseudo-dark filter when the OS flips.
+    (function watchSystemTheme() {
+        if (!window.matchMedia) return;
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        var onChange = function () {
+            if (nightMode !== 'system' || !state.map) return;
+            if (usingAutoStyle()) reapplyAutoStyle();
+            applyChinaDarkFilter();
+        };
+        if (mq.addEventListener) mq.addEventListener('change', onChange);
+        else if (mq.addListener) mq.addListener(onChange); // Safari < 14
+    })();
 
     function NightSwitchControl() {}
     NightSwitchControl.prototype.onAdd = function (map) {
@@ -1114,6 +1366,7 @@
             addPhotoLayers();
             if (REGION.active) addRegionLayers();
             bindMapEvents();
+            applyChinaDarkFilter(); // China basemaps: pseudo-dark if theme is dark
             hideLoading();
         });
         state.map.on('error', function(e) {
@@ -1173,6 +1426,9 @@
                 bindMapEvents();
                 hideLoading();
             }
+            // We're now on the global auto fallback, not a China provider →
+            // make sure the pseudo-dark invert filter is cleared.
+            applyChinaDarkFilter();
         });
     }
 
@@ -3711,11 +3967,13 @@
         return { x: (leftBound + panelLeft) / 2, y: H / 2 };
     }
 
-    function flyMapToPhotoWallPhoto(coords) {
-        if (!state.map || !coords || state.isMobile) return;
+    // wgs: photo location in WGS-84 (from photo-wall data). See flyMapToPhoto.
+    function flyMapToPhotoWallPhoto(wgs) {
+        if (!state.map || !wgs || state.isMobile) return;
         // v1.4.4 (item 5): 触发地图位移时，同时收起地图上已打开的图片展开面板
         // （地图标记点开的照片网格面板 + 地区面板），让飞行目标不被遮挡。
         closeAllPhotoPanels();
+        var coords = toMapCoords(wgs[0], wgs[1]);
         var lngLat = new maplibregl.LngLat(coords[0], coords[1]);
         var center = photoWallLeftAreaCenter();
         var offset = [center.x - window.innerWidth / 2, center.y - window.innerHeight / 2];
@@ -3731,7 +3989,7 @@
                 state.map.easeTo({ zoom: targetZoom, around: lngLat, duration: 1600, easing: easeInOutSine });
                 // v1.4.4 (item 4): drop the pulse dot + location popup in BOTH
                 // region and normal mode once the zoom settles.
-                state.map.once('moveend', function () { if (flyId === state.mapFlyId) showPulseDot(coords); });
+                state.map.once('moveend', function () { if (flyId === state.mapFlyId) showPulseDot(coords, wgs); });
             }, 100);
         });
     }
@@ -3910,7 +4168,7 @@
         for (var i = 0; i < feats.length; i++) {
             var f = feats[i];
             if (f && f.properties && String(f.properties.id) === key && f.geometry && f.geometry.coordinates) {
-                return { coords: f.geometry.coordinates, postId: f.properties.postId };
+                return { coords: featureWgsCoords(f), postId: f.properties.postId };
             }
         }
         return null;
@@ -3941,7 +4199,7 @@
             var p = feats[i].properties || {};
             if ((p.fullImage && imageStem(p.fullImage) === stem) ||
                 (p.thumbnail && imageStem(p.thumbnail) === stem)) {
-                return { coords: feats[i].geometry.coordinates, postId: p.postId };
+                return { coords: featureWgsCoords(feats[i]), postId: p.postId };
             }
         }
         return null;
@@ -4021,10 +4279,14 @@
     // Feature 2 motion: pan the map (at current zoom) so the point rests at the
     // right-map-area centre, brief beat, then zoom about that pixel to 5km/1cm.
     // Two eased stages read like a hand dragging, then zooming in.
-    function flyMapToPhoto(coords) {
-        if (!state.map || !coords || state.isMobile) return;
+    // wgs: photo location in WGS-84. The map flies to the datum-adjusted
+    // position (GCJ under Amap/Tencent) so it lands on the right spot, while the
+    // pulse-dot popup still reports the true WGS-84 coordinate.
+    function flyMapToPhoto(wgs) {
+        if (!state.map || !wgs || state.isMobile) return;
         // v1.4.4 (item 5): 触发地图位移时，同时收起地图上已打开的图片展开面板。
         closeAllPhotoPanels();
+        var coords = toMapCoords(wgs[0], wgs[1]);
         var lngLat = new maplibregl.LngLat(coords[0], coords[1]);
         var target = rightMapAreaCenter();
         var offset = [target.x - window.innerWidth / 2, target.y - window.innerHeight / 2];
@@ -4060,7 +4322,7 @@
                 // popup below it (showPulseDot drives both).
                 state.map.once('moveend', function () {
                     if (flyId !== state.mapFlyId) return;
-                    showPulseDot(coords);
+                    showPulseDot(coords, wgs);
                 });
             }, 100);
         });
@@ -5915,11 +6177,15 @@
     // interaction.
     // ---------------------------------------------------------------
     function pulseDotIsLight() {
-        // A light dot (white) is only wanted on the dark auto basemap.
-        return usingAutoStyle() && !resolveMapIsLight();
+        // A light dot (white) is wanted on any dark basemap: the dark auto style,
+        // or a China basemap under the pseudo-dark canvas filter.
+        return (usingAutoStyle() && !resolveMapIsLight()) || chinaPseudoDarkActive();
     }
 
-    function showPulseDot(coords) {
+    // coords: map-datum position (GCJ under Amap/Tencent) for the dot/popup
+    // placement. wgsCoords: the true WGS-84 coordinate shown as text and sent to
+    // reverse-geocoding; defaults to coords when they are already WGS-84.
+    function showPulseDot(coords, wgsCoords) {
         removePulseDot();
         if (!state.map || !coords) return;
         var el = document.createElement('div');
@@ -5932,7 +6198,7 @@
                 .addTo(state.map);
         } catch (e) { state.pulseDot = null; }
         // v1.4.4 (item 4): a small popup hangs below the dot with lng/lat + name.
-        showLocationPopup(coords);
+        showLocationPopup(coords, wgsCoords || coords);
     }
 
     function removePulseDot() {
@@ -5951,9 +6217,12 @@
         return Math.abs(lat).toFixed(5) + '° ' + ns + ' · ' + Math.abs(lng).toFixed(5) + '° ' + ew;
     }
 
-    function showLocationPopup(coords) {
+    // coords: map-datum position for placement. wgs: true WGS-84 for the coord
+    // text + reverse-geocode (defaults to coords when already WGS-84).
+    function showLocationPopup(coords, wgs) {
         removeLocationPopup(true); // instantly clear a superseded popup
         if (!state.map || !coords) return;
+        wgs = wgs || coords;
         var el = document.createElement('div');
         el.className = 'sp-loc-popup' + (prefersReducedMotion() ? ' sp-loc-popup--static' : '');
         // v1.4.5 (item 5): the grow/shrink animation must run on an INNER wrapper,
@@ -5965,7 +6234,7 @@
             '<div class="sp-loc-popup-inner">'
           +   '<span class="sp-loc-popup-arrow" aria-hidden="true"></span>'
           +   '<div class="sp-loc-popup-body">'
-          +     '<div class="sp-loc-popup-coord">' + escapeHtml(locPopupCoordText(coords)) + '</div>'
+          +     '<div class="sp-loc-popup-coord">' + escapeHtml(locPopupCoordText(wgs)) + '</div>'
           +     '<div class="sp-loc-popup-name">' + escapeHtml(t('解析中…')) + '</div>'
           +   '</div>'
           + '</div>';
@@ -5991,8 +6260,9 @@
             anim.onfinish = function () { if (state.locPopup && state.locPopup.token === token) state.locPopup.anim = null; };
         }
 
-        // Async reverse-geocode; fill the name when it returns (if still current).
-        fetchReverseGeocode(coords).then(function (name) {
+        // Async reverse-geocode using the TRUE WGS-84 coordinate (the geocoding
+        // service expects real GPS, not the GCJ-02-shifted display position).
+        fetchReverseGeocode(wgs).then(function (name) {
             if (!state.locPopup || state.locPopup.token !== token || state.locPopup.closing) return;
             var nameEl = el.querySelector('.sp-loc-popup-name');
             if (!nameEl) return;
