@@ -1,67 +1,67 @@
-![Sphotography](在此填入宣传图链接)
+![Sphotography](promo image link here)
 
-**简体中文** | [English](README_en.md) | [日本語](README_jp.md)
+[简体中文](README.md) | **English** | [日本語](README_jp.md)
 
 # Sphotography
 
-Sphotography - 全屏地图式、把内容变成一场探索的 WordPress 摄影主题
+Sphotography — A fullscreen map-based WordPress photography theme that turns content into an exploration.
 
 [![GitHub release](https://img.shields.io/github/v/release/ShirazuNagisa/sphotography?color=%231abc9c&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/releases) [![GitHub All Releases](https://img.shields.io/github/downloads/ShirazuNagisa/sphotography/total?style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/releases) [![GitHub](https://img.shields.io/github/license/ShirazuNagisa/sphotography?color=blue&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) [![Author](https://img.shields.io/badge/author-Shirazu%20Nagisa-yellow?style=for-the-badge)](https://github.com/ShirazuNagisa) [![GitHub stars](https://img.shields.io/github/stars/ShirazuNagisa/sphotography?color=ff69b4&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/stargazers)
 
 [![GitHub last commit](https://img.shields.io/github/last-commit/ShirazuNagisa/sphotography?style=flat-square)](https://github.com/ShirazuNagisa/sphotography/commits/master) [![GitHub Release Date](https://img.shields.io/github/release-date/ShirazuNagisa/sphotography?style=flat-square)](https://github.com/ShirazuNagisa/sphotography/releases) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/ShirazuNagisa/sphotography?style=flat-square)
 
-# 状态
+# Status
 
-> 核心理念：**内容在后台，探索在前端。** 访客进入网站看到的不是文章列表，而是一整块占据视口的矢量地图 —— 每张带位置信息的照片都是地图上的一枚标记，点击即展开文章、翻页定位、飞向坐标。持续更新中，PR 与 Issue 欢迎提交。
+> **Core Philosophy: Content in the backend, exploration in the frontend.** When visitors enter the site, they're not greeted with a list of articles — instead, they see a vector map filling the entire viewport. Every photo with location data becomes a pin on the map; click to expand the article, navigate between pages, or fly to coordinates. Continuously evolving. PRs and Issues are always welcome.
 
-# 特性
+# Features
 
-+ **全屏地图探索** - 基于 MapLibre GL JS 的矢量地图作为首页，CartoDB 底图（暗色 Dark Matter / 浅色 Positron），无需任何 API Token；照片化作水滴标记，邻近点经 gooey 滤镜实时「融合 / 分裂」聚合
-+ **夜间模式** - 跟随系统 / 强制浅色 / 强制暗色三档，深色方案另有 经典 / 蓝调 / 紫调 可选
-+ **边栏与文章** - 可展开 / 收起边栏、即时搜索（`Ctrl / ⌘ + K`）、分类与地域筛选、REST 加载全文，配 Windows DWM 式窗口缩放展开动画
-+ **照片墙** - 文章照片按日期分组、支持置顶、无限下拉加载、点击弹层查看含光圈 / 快门 / ISO 的 EXIF 详情，并可「查看拍摄位置」飞向地图
-+ **地图联动** - 点击标记浮出照片网格并随图跟随；桌面端点击网格照片以窗口动画展开文章并翻页定位到对应段落；点击文章内地理图片，后台地图平移后放大至 5km/1cm 停在面板右侧
-+ **自建评论系统** - REST 架构，支持 验证码、悄悄话、邮件提醒、Markdown、表情、点赞、置顶、编辑历史、UA、IP 属地、文字头像、折叠、分页
-+ **友链与留言板** - 复用 WordPress 链接管理器，mShots 自动缩略图、友链申请与审核，留言页复用评论引擎
-+ **AI 模块（实验性）** - 自带 Key（AES-256 加密存储、仅服务端调用）；文章补全 / 润色（可调感情风格与文案长度）、全文概述、AI 自动标签，支持单 / 双模型多模态识图写作，输出为原生区块 HTML
-+ **社交分享** - 微信二维码 / QQ / 空间 / 微博 / X / Facebook / 复制链接，单色主题色图标
-+ **多语言** - 前端 中 / A / あ 语言切换，静态词典 + 按需模型翻译 + 服务端缓存；文章译文在保存时预生成
-+ **数据统计** - 边栏展开页富统计与地区饼图、错落瀑布流文章列表、卡片字数与阅读量
-+ **地域着色** - `region_tag` 地域标签、行政区边界按需下载托管、地区筛选与地块统计、地图主题色滤镜
-+ **诸多细节** - 圆角磁吸光标（iPad 式）、浮动公告面板（可自动关闭）、文章内目录（TOC）、阅读进度、页面链接栏、文章封面模糊背景等
-+ **全局配置导出 / 导入** - 一键 JSON 导出 / 导入全部设置（含加密 API Key 明文往返、友链、留言板、地域颜色）
-+ **后台管理** - 独立顶级配置页、媒体库 EXIF 一键提取（GPS / 相机 / 日期）、CDN 来源切换（jsDelivr / unpkg / cdnjs）、GitHub 分支一键更新、可选后台 Sphotography 风格
-+ **技术特性** - 纯原生 JavaScript（无框架、零全局污染）、REST + PHP 内联数据双通道（403 自动回退）、CSS 变量驱动的设计系统、响应式三断点、无障碍友好并尊重「减弱动态」偏好
++ **Fullscreen Map Exploration** — A vector map powered by MapLibre GL JS serves as the homepage, with CartoDB basemaps (Dark Matter / Positron) — no API token required. Photos appear as droplet-shaped markers; nearby points are dynamically merged/split via a gooey filter for real-time clustering.
++ **Night Mode** — Three modes: Follow System / Force Light / Force Dark. The dark scheme also offers Classic / Blue / Purple variants.
++ **Sidebar & Articles** — Collapsible sidebar, instant search (`Ctrl / ⌘ + K`), category and region filtering, full article loading via REST. Features a Windows DWM-style window-snapping expand animation.
++ **Photo Wall** — Photos grouped by date, with pinned posts, infinite scroll, and a lightbox revealing EXIF details (aperture, shutter speed, ISO). A "View on Map" button flies you to the shooting location.
++ **Map Interaction** — Click a marker to reveal a photo grid that follows the map. On desktop, click a grid photo to open the article with a windowed animation and navigate to the corresponding paragraph. Click a geotagged image within an article to pan the map and zoom to a 5 km / 1 cm scale, neatly parked beside the panel.
++ **Custom Comment System** — REST-based, supporting captcha, private comments, email notifications, Markdown, emoji, likes, pinning, edit history, user agent, IP geolocation, text avatars, collapsible threads, and pagination.
++ **Friends & Message Board** — Reuses the WordPress Links Manager with mShots auto-thumbnails, friend link applications with approval workflow, and a message board powered by the same comment engine.
++ **AI Module (Experimental)** — Built-in API key (AES-256 encrypted, server-side only). Supports article completion / polishing (adjustable tone, style, and length), full-text summarization, auto-tagging, and single/dual-model multimodal image-to-text writing — outputting native block HTML.
++ **Social Sharing** — WeChat QR code, QQ, QZone, Weibo, X (Twitter), Facebook, and copy link — all with monochrome theme-colored icons.
++ **Multi-language** — Frontend language switching between 中文 / EN / 日本語. Static dictionary + on-demand model translation + server-side caching. Article translations are pre-generated upon saving.
++ **Statistics** — Expanded sidebar with rich statistics, regional pie charts, a staggered waterfall article list, and word count / reading stats on cards.
++ **Region Coloring** — `region_tag` taxonomy, on-demand administrative boundary downloads, region filtering with plot statistics, and map theme color filters.
++ **Many Details** — Rounded magnetic cursor (iPad-style), floating announcement panel (auto-dismissable), in-article table of contents (TOC), reading progress indicator, page link bar, blurred article cover backgrounds, and more.
++ **Global Config Export / Import** — One-click JSON export/import of all settings (including encrypted API key round-trip, friend links, message board entries, region colors).
++ **Admin Features** — Dedicated top-level settings page, one-click EXIF extraction (GPS / camera / date) from the media library, CDN source switching (jsDelivr / unpkg / cdnjs), one-click GitHub branch update, optional Sphotography-styled admin interface.
++ **Technical Highlights** — Pure vanilla JavaScript (no frameworks, zero global pollution), dual-channel data delivery via REST + inline PHP (with automatic 403 fallback), CSS-variable-driven design system, responsive three-breakpoint layout, accessibility-friendly with respect for `prefers-reduced-motion`.
 
-# 安装
+# Installation
 
-在 [Release](https://github.com/ShirazuNagisa/sphotography/releases) 页面下载 .zip 文件，在 WordPress 后台 "外观 - 主题" 页面上传并安装启用。
+Download the .zip file from the [Releases](https://github.com/ShirazuNagisa/sphotography/releases) page. In your WordPress admin, go to **Appearance → Themes**, upload and activate the theme.
 
-启用后主题会自动注册 `region_tag` 地域标签分类法，并创建「全屏地图」页面模板、设为静态首页。
+Upon activation, the theme will automatically register the `region_tag` taxonomy, create a "Fullscreen Map" page template, and set it as the static front page.
 
-# 文档
+# Documentation
 
-[Sphotography 文档 ](https://sph-doc.shirazu-nagisa.com)
+[Sphotography Documentation](https://sph-doc.shirazu-nagisa.com)
 
-# Demo / 用户墙
+# Demo / User Wall
 
 [sphotography.shirazu-nagisa.com](https://sphotography.shirazu-nagisa.com)
 
-前往 [用户墙](在此填入用户墙链接) 查看更多博客的主题效果。
+Check out the [User Wall](user wall link here) to see more blogs using this theme.
 
-# 注意
+# Note
 
-Sphotography 使用 [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) 协议开源，请遵守此协议进行二次开发等。
+Sphotography is open-sourced under the [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) license. Please comply with this license for any derivative work.
 
-# 渲染
+# Screenshots
 
-![render1](在此填入渲染图1链接)
+![render1](render image 1 link here)
 
-![render2](在此填入渲染图2链接)
+![render2](render image 2 link here)
 
-![render3](在此填入渲染图3链接)
+![render3](render image 3 link here)
 
-# 更新日志
+# Changelog
 
 ## 20260720 v1.4.9
 
@@ -251,8 +251,8 @@ Sphotography 使用 [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotog
 + GitHub 更新器 + 内联数据回退
 + 媒体库 EXIF GPS 自动检测、可编辑坐标 / 相机 / 日期字段
 
-# 捐赠
+# Donate
 
-如果你觉得 Sphotography 主题不错，可以请我一顿KFC来支持我的开发。
+If you like the Sphotography theme, you can buy me a KFC to support my development.
 
-![donate](在此填入赞赏码图片链接)
+![donate](donation QR code link here)
