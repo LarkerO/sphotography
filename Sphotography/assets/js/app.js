@@ -7575,22 +7575,15 @@
             }
 
             // v1.5.0 (fix): 分享链接直达单篇文章时自动打开对应文章。
-            // 服务端优先通过 Sphotography.currentPostId 告诉前端当前文章 ID；
-            // 兜底逻辑再从 URL 查询参数 ?p=<id> 解析（当 URL 为 ?p= 形式时，
-            // WordPress 不总是将其判定为 is_singular，两个来源互补）。
+            // 仅使用服务端 PHP 通过 Sphotography.currentPostId 注入的
+            // 权威文章 ID —— WordPress 的 is_singular('post') 正确解析了
+            // 当前请求，JS 不再自行从 URL 猜测（否则主页 URL 若携带 ?p= 之类的
+            // 查询参数会被误判为文章，触发「文章加载失败」界面）。
             // 必须等 init 完成（地图、数据、事件都就绪）之后再打开，
             // 这样 animateWindowsOpen 的 fallback（无源卡片直接显示面板）
             // 与评论/分享/阅读量等子模块都能正常工作。
-            var deepLinkPostId = 0;
             if (APP.currentPostId) {
-                deepLinkPostId = APP.currentPostId;
-            } else {
-                var spQuery = window.location.search || '';
-                var spMatch = /(?:^|[?&])p=(\d+)/.exec(spQuery);
-                if (spMatch) deepLinkPostId = parseInt(spMatch[1], 10) || 0;
-            }
-            if (deepLinkPostId) {
-                openArticle(deepLinkPostId);
+                openArticle(APP.currentPostId);
             }
         } catch (err) {
             console.error('Init error:', err);
