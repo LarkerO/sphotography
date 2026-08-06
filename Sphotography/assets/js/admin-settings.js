@@ -13,10 +13,17 @@
         return function () { var a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, delay); };
     }
 
+    // v1.5.0 (fix): 版本比较不再硬编码只比较前 3 段。主题可能发布 `1.4.91`、
+    // `1.4.9.1` 这类「段数不限」的版本号（把一个小版本作为一个额外的数字段），
+    // 旧实现 `for (i < 3)` 会忽略第 4 段及以后，导致此类版本被误判为「没有更新」。
+    // 新实现按`.`拆分为数字段，**补齐到较长的段数**再逐段比较（缺段视为 0），
+    // 因此任意长度版本号都能正确比较：1.4.9.1 > 1.4.9、1.4.91 > 1.4.9、
+    // 1.5.0 > 1.4.91 均成立。
     function semverGreater(a, b) {
         var pa = String(a || '').split('.');
         var pb = String(b || '').split('.');
-        for (var i = 0; i < 3; i++) {
+        var len = Math.max(pa.length, pb.length);
+        for (var i = 0; i < len; i++) {
             var na = parseInt(pa[i], 10) || 0;
             var nb = parseInt(pb[i], 10) || 0;
             if (na > nb) return true;
