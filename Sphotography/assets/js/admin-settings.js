@@ -13,15 +13,22 @@
         return function () { var a = arguments, c = this; clearTimeout(t); t = setTimeout(function () { fn.apply(c, a); }, delay); };
     }
 
-    // v1.5.0 (fix): 版本比较不再硬编码只比较前 3 段。主题可能发布 `1.4.91`、
-    // `1.4.9.1` 这类「段数不限」的版本号（把一个小版本作为一个额外的数字段），
-    // 旧实现 `for (i < 3)` 会忽略第 4 段及以后，导致此类版本被误判为「没有更新」。
-    // 新实现按`.`拆分为数字段，**补齐到较长的段数**再逐段比较（缺段视为 0），
-    // 因此任意长度版本号都能正确比较：1.4.9.1 > 1.4.9、1.4.91 > 1.4.9、
-    // 1.5.0 > 1.4.91 均成立。
+    // v1.5.0 (fix): 版本比较不再硬编码只比较前 3 段，且先剥离 `v` 前缀与首尾空白。
+    // 主题可能发布 `1.4.91`、`1.4.9.1` 这类「段数不限」的版本号（把一个小版本
+    // 作为一个额外的数字段），旧实现 `for (i < 3)` 会忽略第 4 段及以后；而远程
+    // version.json 若写 `v1.4.91`、本地 style.css 写 `1.5.0`，旧实现 `parseInt("v1")`
+    // 得到 NaN → 0，首段 0 < 1 变成恒判「没有更新」。新实现先 `.trim()` 再去掉
+    // 开头的 `v`/`V`，再按`.`拆分为数字段，**补齐到较长的段数**逐段比较（缺段视为
+    // 0），因此任意长度、带不带 v 前缀、带不带空白的版本号都能正确比较：
+    // v1.4.9.1 > 1.4.9、v1.4.91 > 1.4.9、v1.5.0 > v1.4.91 均成立。
     function semverGreater(a, b) {
-        var pa = String(a || '').split('.');
-        var pb = String(b || '').split('.');
+        var clean = function (s) {
+            return String(s || '')
+                .trim()
+                .replace(/^[vV]/, '');
+        };
+        var pa = clean(a).split('.');
+        var pb = clean(b).split('.');
         var len = Math.max(pa.length, pb.length);
         for (var i = 0; i < len; i++) {
             var na = parseInt(pa[i], 10) || 0;

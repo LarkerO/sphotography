@@ -2732,6 +2732,16 @@
             var post = results[0];
             if (state.openedPostId !== requestPostId) return;
             if (!post) {
+                // v1.5.01 (fix): 深链/初始化场景（options.deepLink）拉取失败时
+                // 静默回退到地图，绝不弹出「文章加载失败」——否则访问主页在
+                // 某些环境下 REST 单篇接口偶发失败会误弹错误面板。仅用户主动
+                // 点击卡片打开时才显示失败提示。
+                if (options && options.deepLink) {
+                    state.articleOpen = false;
+                    state.openedPostId = null;
+                    dom.articlePanel.classList.remove('active');
+                    return;
+                }
                 dom.articleTitle.textContent = t('文章加载失败');
                 dom.articleMeta.textContent = '';
                 dom.articleContent.innerHTML = '';
@@ -7583,7 +7593,7 @@
             // 这样 animateWindowsOpen 的 fallback（无源卡片直接显示面板）
             // 与评论/分享/阅读量等子模块都能正常工作。
             if (APP.currentPostId) {
-                openArticle(APP.currentPostId);
+                openArticle(APP.currentPostId, { deepLink: true });
             }
         } catch (err) {
             console.error('Init error:', err);

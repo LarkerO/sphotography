@@ -63,7 +63,7 @@ Sphotography is open-sourced under the [GPL v2.0 or later](https://github.com/Sh
 
 # Changelog
 
-## 20260806 v1.5.0
+## 20260806 v1.5.01
 
 + 修复 分享链接直达单篇文章时无法渲染内容的问题（单文章 URL 现在会加载地图资源，并自动打开对应文章面板）
 + 修复 后台「检查更新」无法识别 v1.4.91 这类多段版本号的问题，任意长度版本号均能正确比较

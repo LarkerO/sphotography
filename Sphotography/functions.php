@@ -903,7 +903,7 @@ function sphotography_enqueue_scripts() {
         'sphotography-qrcode',
         get_template_directory_uri() . '/assets/js/qrcode.js',
         array(),
-        '1.5.0',
+        '1.5.01',
         true
     );
 
