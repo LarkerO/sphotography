@@ -839,7 +839,10 @@ function sphotography_get_cdn_urls() {
  * so forcing the template also loads MapLibre + the app bundle + inline data.
  */
 function sphotography_is_map_view() {
-    return is_page_template( 'template-map.php' ) || is_front_page() || is_home();
+    // v1.4.x (fix): 单篇文章 URL（分享链接直达）也会渲染地图模板（index.php
+    // 无条件回退到 template-map.php），因此这里必须同样视为地图视图，
+    // 否则地图资源 / 内联数据 / 动态 CSS 全部缺失，页面只剩空壳。
+    return is_page_template( 'template-map.php' ) || is_front_page() || is_home() || is_singular( 'post' );
 }
 
 /**
@@ -939,6 +942,9 @@ function sphotography_enqueue_scripts() {
     }
 
     $sp_current_user = wp_get_current_user();
+    // v1.4.x (fix): 分享链接直接打开单篇文章时，服务端把当前文章 ID 传给前端，
+    // app.js 初始化完成后据此自动打开文章面板。
+    $sp_current_post_id = is_singular( 'post' ) ? (int) get_queried_object_id() : 0;
     wp_localize_script(
         'sphotography-app',
         'Sphotography',
@@ -946,6 +952,8 @@ function sphotography_enqueue_scripts() {
             'restUrl'         => esc_url_raw( rest_url() ),
             'siteName'        => get_bloginfo( 'name' ),
             'restNonce'       => wp_create_nonce( 'wp_rest' ),
+            'currentPostId'   => $sp_current_post_id,
+            'currentPostLink' => $sp_current_post_id ? get_permalink( $sp_current_post_id ) : '',
             // v1.4.3: 语言切换控件仅在 AI 开启时显示（动态正文翻译依赖文本模型）。
             'aiEnabled'       => ( function_exists( 'sphotography_ai_is_enabled' ) && sphotography_ai_is_enabled() ),
             // v1.4.4: 翻译功能独立开关（AI 开启 + 翻译子开关）。语言切换控件据此显示。

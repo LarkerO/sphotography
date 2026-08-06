@@ -7573,6 +7573,15 @@
             } else {
                 closeSidebar(true);
             }
+
+            // v1.4.x (fix): 分享链接直达单篇文章时，服务端通过
+            // Sphotography.currentPostId 告诉前端要自动打开哪篇文章。
+            // 必须等 init 完成（地图、数据、事件都就绪）之后再打开，
+            // 这样 animateWindowsOpen 的 fallback（无源卡片直接显示面板）
+            // 与评论/分享/阅读量等子模块都能正常工作。
+            if (APP.currentPostId) {
+                openArticle(APP.currentPostId);
+            }
         } catch (err) {
             console.error('Init error:', err);
             hideLoading();
