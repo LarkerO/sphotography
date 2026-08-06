@@ -7574,13 +7574,23 @@
                 closeSidebar(true);
             }
 
-            // v1.4.x (fix): 分享链接直达单篇文章时，服务端通过
-            // Sphotography.currentPostId 告诉前端要自动打开哪篇文章。
+            // v1.5.0 (fix): 分享链接直达单篇文章时自动打开对应文章。
+            // 服务端优先通过 Sphotography.currentPostId 告诉前端当前文章 ID；
+            // 兜底逻辑再从 URL 查询参数 ?p=<id> 解析（当 URL 为 ?p= 形式时，
+            // WordPress 不总是将其判定为 is_singular，两个来源互补）。
             // 必须等 init 完成（地图、数据、事件都就绪）之后再打开，
             // 这样 animateWindowsOpen 的 fallback（无源卡片直接显示面板）
             // 与评论/分享/阅读量等子模块都能正常工作。
+            var deepLinkPostId = 0;
             if (APP.currentPostId) {
-                openArticle(APP.currentPostId);
+                deepLinkPostId = APP.currentPostId;
+            } else {
+                var spQuery = window.location.search || '';
+                var spMatch = /(?:^|[?&])p=(\d+)/.exec(spQuery);
+                if (spMatch) deepLinkPostId = parseInt(spMatch[1], 10) || 0;
+            }
+            if (deepLinkPostId) {
+                openArticle(deepLinkPostId);
             }
         } catch (err) {
             console.error('Init error:', err);
