@@ -7,16 +7,135 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 // 占位文章管理
 
-// 获取或创建留言板占位文章
-function sphotography_guestbook_post_id() {
+/**
+ * 查找已存在的留言板占位文章。
+ *
+ * 优先匹配主题专用 slug 'sphotography-guestbook'；若不存在（历史版本并发/误删重建
+ * 可能产生 -2 / -3 后缀的孤儿文章），则复用最早的一篇，避免再次创建造成累积。
+ *
+ * @return int 占位文章 ID，不存在返回 0。
+ */
+function sphotography_guestbook_find_holder_post() {
+	global $wpdb;
+
+	// 精确 slug 优先。
+	$id = (int) $wpdb->get_var(
+		"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND post_name = 'sphotography-guestbook' ORDER BY ID ASC LIMIT 1"
+	);
+	if ( $id > 0 ) {
+		return $id;
+	}
+
+	// 兜底：任意 'sphotography-guestbook%' 前缀的历史占位文章（最早一篇）。
+	$id = (int) $wpdb->get_var( $wpdb->prepare(
+		"SELECT ID FROM {$wpdb->posts} WHERE post_type = 'post' AND post_name LIKE %s ORDER BY ID ASC LIMIT 1",
+		'sphotography-guestbook%'
+	) );
+	return $id;
+}
+
+/**
+ * 跨请求原子锁：防止并发请求同时创建占位文章。
+ *
+ * 利用 options 表 option_name 唯一索引实现原子获取；锁超过 $expire 秒未释放
+ * 视为过期（前一个创建进程可能崩溃），带旧时间戳条件更新防止并发抢占同一把过期锁。
+ *
+ * @param int $expire 锁有效期（秒）。
+ * @return bool true 表示拿到锁。
+ */
+function sphotography_guestbook_acquire_lock( $expire = 30 ) {
+	global $wpdb;
+
+	$now = time();
+	$inserted = $wpdb->insert(
+		$wpdb->options,
+		array(
+			'option_name'  => 'sphotography_gb_create_lock',
+			'option_value' => $now,
+			'autoload'     => 'no',
+		),
+		array( '%s', '%d', '%s' )
+	);
+	if ( $inserted ) {
+		return true;
+	}
+
+	// 锁已存在：检查是否过期。
+	$stored = (int) $wpdb->get_var( $wpdb->prepare(
+		"SELECT option_value FROM {$wpdb->options} WHERE option_name = %s",
+		'sphotography_gb_create_lock'
+	) );
+	if ( $stored > 0 && ( $now - $stored ) >= $expire ) {
+		$updated = $wpdb->update(
+			$wpdb->options,
+			array( 'option_value' => $now ),
+			array( 'option_name' => 'sphotography_gb_create_lock', 'option_value' => $stored ),
+			array( '%d' ),
+			array( '%s', '%d' )
+		);
+		if ( 1 === $updated ) {
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
+ * 释放占位文章创建锁。
+ */
+function sphotography_guestbook_release_lock() {
+	delete_option( 'sphotography_gb_create_lock' );
+}
+
+/**
+ * 获取留言板占位文章 ID。
+ *
+ * 默认惰性创建，但已具备幂等保护：
+ *  - 按主题专用 slug 复用已存在的占位文章（含历史孤儿），并修复 option 引用；
+ *  - 仅当确实不存在时才创建，且由跨请求原子锁保证并发下最多创建一篇。
+ *
+ * $allow_create=false 时为纯只读（绝不写库），供「仅判断是否为留言板」的场景使用。
+ *
+ * @param bool $allow_create 是否允许在缺失时自动创建。
+ * @return int 占位文章 ID；不可用返回 0。
+ */
+function sphotography_guestbook_post_id( $allow_create = true ) {
 	$post_id = (int) get_option( 'sphotography_guestbook_post' );
 
-	// If we have a stored ID, verify it still exists.
+	// 已有有效引用，直接返回。
 	if ( $post_id > 0 ) {
 		$post = get_post( $post_id );
 		if ( $post && 'post' === $post->post_type ) {
 			return $post_id;
 		}
+	}
+
+	// 幂等：复用已存在的占位文章（含历史孤儿），并修复 option 引用。
+	$existing = sphotography_guestbook_find_holder_post();
+	if ( $existing > 0 ) {
+		if ( $post_id !== $existing ) {
+			update_option( 'sphotography_guestbook_post', $existing );
+		}
+		return $existing;
+	}
+
+	if ( ! $allow_create ) {
+		return 0;
+	}
+
+	// 跨请求原子锁：并发下只允许一个请求进入创建流程。
+	if ( ! sphotography_guestbook_acquire_lock() ) {
+		return 0;
+	}
+
+	// 锁内二次查重：加锁前可能有其他请求已完成创建。
+	$existing = sphotography_guestbook_find_holder_post();
+	if ( $existing > 0 ) {
+		sphotography_guestbook_release_lock();
+		if ( $post_id !== $existing ) {
+			update_option( 'sphotography_guestbook_post', $existing );
+		}
+		return $existing;
 	}
 
 	// Create the holder post.
@@ -30,12 +149,23 @@ function sphotography_guestbook_post_id() {
 		'post_content'    => '',
 	) );
 
+	sphotography_guestbook_release_lock();
+
 	if ( is_wp_error( $new_post_id ) ) {
 		return 0;
 	}
 
 	update_option( 'sphotography_guestbook_post', (int) $new_post_id );
 	return (int) $new_post_id;
+}
+
+/**
+ * 显式确保占位文章存在（主题激活 / 后台清理时调用）。
+ *
+ * @return int 占位文章 ID。
+ */
+function sphotography_guestbook_ensure_post() {
+	return sphotography_guestbook_post_id( true );
 }
 
 // 从公开查询中排除留言板占位文章
@@ -121,6 +251,39 @@ function sphotography_render_guestbook_board() {
 
 				<?php submit_button( __( '保存', 'sphotography' ), 'primary', 'submit', false ); ?>
 			</form>
+
+			<?php if ( function_exists( 'sphotography_guestbook_holder_posts' ) ) : ?>
+				<?php
+				$current_gb   = (int) get_option( 'sphotography_guestbook_post' );
+				$orphan_count = 0;
+				foreach ( sphotography_guestbook_holder_posts() as $r ) {
+					if ( (int) $r->ID !== $current_gb ) {
+						$orphan_count++;
+					}
+				}
+				?>
+				<?php if ( $orphan_count > 0 ) : ?>
+				<hr class="sphotography-field-divider">
+				<div class="sphotography-field">
+					<label class="sphotography-label"><?php _e( '占位文章维护', 'sphotography' ); ?></label>
+					<p class="sphotography-desc">
+						<?php
+						printf(
+							/* translators: 1: 多余的留言板占位文章数量 */
+							__( '检测到 %1$d 篇多余的「留言板」占位文章（由早期版本重复创建产生）。一键清理会删除其中无留言的空文章；若某篇上仍有历史留言，则会自动保留并重新启用，留言数据不会丢失。', 'sphotography' ),
+							$orphan_count
+						);
+						?>
+					</p>
+					<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>"
+						onsubmit="return confirm('<?php echo esc_js( __( '确定清理多余的「留言板」占位文章吗？此操作不可恢复。', 'sphotography' ) ); ?>');">
+						<input type="hidden" name="action" value="sphotography_cleanup_guestbook">
+						<?php wp_nonce_field( 'sphotography_cleanup_guestbook', 'sphotography_cleanup_guestbook_nonce' ); ?>
+						<button type="submit" class="button button-secondary"><?php _e( '清理多余占位文章', 'sphotography' ); ?></button>
+					</form>
+				</div>
+				<?php endif; ?>
+			<?php endif; ?>
 		</div>
 	</div>
 	<?php
@@ -288,3 +451,102 @@ function sphotography_rest_guestbook( WP_REST_Request $request ) {
 		'mode'     => $mode,
 	), 200 );
 }
+
+// ============================================================================
+// 多余占位文章清理（v1.5.02：修复早期版本并发重复创建产生的孤儿文章）
+// ============================================================================
+
+/**
+ * 列出全部留言板占位文章（按主题专用 slug 前缀识别，含历史后缀 -2 / -3）。
+ *
+ * @return array 每项含 ID / post_title / post_name / post_status / post_date。
+ */
+function sphotography_guestbook_holder_posts() {
+	global $wpdb;
+
+	$rows = $wpdb->get_results( $wpdb->prepare(
+		"SELECT ID, post_title, post_name, post_status, post_date
+		 FROM {$wpdb->posts}
+		 WHERE post_type = 'post' AND post_name LIKE %s
+		 ORDER BY ID ASC",
+		'sphotography-guestbook%'
+	) );
+
+	return is_array( $rows ) ? $rows : array();
+}
+
+/**
+ * 清理多余占位文章：
+ *  - 仅删除「当前 option 未引用」且「无任何留言」的空占位文章；
+ *  - 若某篇多余占位文章上仍有历史留言（曾作为留言板被使用过），绝不删除，
+ *    而是将其重新采纳为当前引用，避免留言数据丢失；
+ *  - 清理后重新确保存在一篇有效占位文章。
+ */
+function sphotography_handle_guestbook_cleanup() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		wp_die( esc_html__( '权限不足。', 'sphotography' ) );
+	}
+
+	check_admin_referer( 'sphotography_cleanup_guestbook', 'sphotography_cleanup_guestbook_nonce' );
+
+	$current = (int) get_option( 'sphotography_guestbook_post' );
+	$deleted = 0;
+
+	foreach ( sphotography_guestbook_holder_posts() as $row ) {
+		$id = (int) $row->ID;
+		if ( $id === $current ) {
+			continue; // 保留当前引用的一篇。
+		}
+
+		// 有留言的占位文章（曾承载留言数据）不删，重新采纳为当前引用。
+		if ( get_comments_number( $id ) > 0 ) {
+			update_option( 'sphotography_guestbook_post', $id );
+			$current = $id;
+			continue;
+		}
+
+		if ( wp_delete_post( $id, true ) ) {
+			$deleted++;
+		}
+	}
+
+	// 若当前引用已失效（文章被删），重置 option，由 ensure 重新确立一篇。
+	$post = ( $current > 0 ) ? get_post( $current ) : null;
+	if ( ! $post || 'post' !== $post->post_type ) {
+		update_option( 'sphotography_guestbook_post', 0 );
+	}
+
+	// 确保存在有效占位文章（幂等：优先复用现存文章，绝不重复创建）。
+	sphotography_guestbook_ensure_post();
+
+	wp_safe_redirect( add_query_arg(
+		array(
+			'page'        => 'sphotography-settings',
+			'sp-gb-clean' => $deleted,
+		),
+		admin_url( 'admin.php' )
+	) . '#sp-cat-social' );
+	exit;
+}
+add_action( 'admin_post_sphotography_cleanup_guestbook', 'sphotography_handle_guestbook_cleanup' );
+
+/**
+ * 清理结果提示（设置页顶部）。
+ */
+function sphotography_guestbook_cleanup_notice() {
+	if ( ! isset( $_GET['sp-gb-clean'] ) || ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+	$count = (int) $_GET['sp-gb-clean'];
+	if ( $count > 0 ) {
+		echo '<div class="notice notice-success is-dismissible"><p>' . esc_html( sprintf(
+			/* translators: 1: 已清理的占位文章数量 */
+			__( '已清理 %1$d 篇多余的「留言板」占位文章。', 'sphotography' ),
+			$count
+		) ) . '</p></div>';
+	} else {
+		echo '<div class="notice notice-info is-dismissible"><p>' . esc_html__( '没有需要清理的留言板占位文章。', 'sphotography' ) . '</p></div>';
+	}
+}
+add_action( 'admin_notices', 'sphotography_guestbook_cleanup_notice' );
+

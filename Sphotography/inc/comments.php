@@ -244,7 +244,8 @@ function sphotography_rest_create_comment( WP_REST_Request $request ) {
 
 	// Captcha (anonymous only). The guestbook (留言板) is exempt by design —
 	// it never shows a captcha regardless of the global comment setting.
-	$is_guestbook = function_exists( 'sphotography_guestbook_post_id' ) && $post_id === sphotography_guestbook_post_id();
+	// 只读判断（false）：提交评论不应触发占位文章的创建。
+	$is_guestbook = function_exists( 'sphotography_guestbook_post_id' ) && $post_id === sphotography_guestbook_post_id( false );
 	if ( sphotography_comment_setting( 'comment_captcha' ) && ! $logged_in && ! $is_guestbook ) {
 		if ( ! sphotography_verify_captcha( $request->get_param( 'captcha_token' ), $request->get_param( 'captcha_answer' ) ) ) {
 			return new WP_Error( 'sp_captcha', __( '验证码错误，请重试。', 'sphotography' ), array( 'status' => 400 ) );

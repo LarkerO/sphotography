@@ -1024,6 +1024,13 @@ function sphotography_theme_activation() {
         sphotography_site_stats_capture_install_time();
     }
 
+    // v1.5.02: 留言板占位文章在主题激活时一次性创建。
+    // 早期版本依赖前端懒创建（每次页面加载 get-or-create），无并发保护会累积
+    // 多篇同名私密空文章；激活时先确保存在一篇，后续前端只读复用。
+    if ( function_exists( 'sphotography_guestbook_ensure_post' ) ) {
+        sphotography_guestbook_ensure_post();
+    }
+
     // Flush only after all types and the front page are in their final state.
     flush_rewrite_rules();
 }
