@@ -1,18 +1,14 @@
-![Sphotography](在此填入宣传图链接)
-
 **简体中文** | [English](README_en.md) | [日本語](README_jp.md)
 
-# Sphotography
+# SphotographySP
 
-Sphotography - 全屏地图式、把内容变成一场探索的 WordPress 摄影主题
-
-[![GitHub release](https://img.shields.io/github/v/release/ShirazuNagisa/sphotography?color=%231abc9c&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/releases) [![GitHub All Releases](https://img.shields.io/github/downloads/ShirazuNagisa/sphotography/total?style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/releases) [![GitHub](https://img.shields.io/github/license/ShirazuNagisa/sphotography?color=blue&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) [![Author](https://img.shields.io/badge/author-Shirazu%20Nagisa-yellow?style=for-the-badge)](https://github.com/ShirazuNagisa) [![GitHub stars](https://img.shields.io/github/stars/ShirazuNagisa/sphotography?color=ff69b4&style=for-the-badge)](https://github.com/ShirazuNagisa/sphotography/stargazers)
-
-[![GitHub last commit](https://img.shields.io/github/last-commit/ShirazuNagisa/sphotography?style=flat-square)](https://github.com/ShirazuNagisa/sphotography/commits/master) [![GitHub Release Date](https://img.shields.io/github/release-date/ShirazuNagisa/sphotography?style=flat-square)](https://github.com/ShirazuNagisa/sphotography/releases) ![GitHub code size in bytes](https://img.shields.io/github/languages/code-size/ShirazuNagisa/sphotography?style=flat-square)
+SphotographySP - 全屏地图式、把内容变成一场探索的 WordPress 摄影主题
 
 # 状态
 
 > 核心理念：**内容在后台，探索在前端。** 访客进入网站看到的不是文章列表，而是一整块占据视口的矢量地图 —— 每张带位置信息的照片都是地图上的一枚标记，点击即展开文章、翻页定位、飞向坐标。持续更新中，PR 与 Issue 欢迎提交。
+
+SP 版本是由 [Larker](https://github.com/LarkerO) 分支维护的，目的是比 [Sphotography 原项目](https://github.com/ShirazuNagisa/sphotography/) 有新的支持、更现代的前端及更加去 AI 化的表达。
 
 # 特性
 
@@ -35,31 +31,13 @@ Sphotography - 全屏地图式、把内容变成一场探索的 WordPress 摄影
 
 # 安装
 
-在 [Release](https://github.com/ShirazuNagisa/sphotography/releases) 页面下载 .zip 文件，在 WordPress 后台 "外观 - 主题" 页面上传并安装启用。
+在 [Release](https://github.com/LarkerO/sphotography/releases) 页面下载 .zip 文件，在 WordPress 后台 "外观 - 主题" 页面上传并安装启用。
 
 启用后主题会自动注册 `region_tag` 地域标签分类法，并创建「全屏地图」页面模板、设为静态首页。
-
-# 文档
-
-[Sphotography 文档 ](https://sph-doc.shirazu-nagisa.com)
-
-# Demo / 用户墙
-
-[sphotography.shirazu-nagisa.com](https://sphotography.shirazu-nagisa.com)
-
-前往 [用户墙](在此填入用户墙链接) 查看更多博客的主题效果。
 
 # 注意
 
 Sphotography 使用 [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) 协议开源，请遵守此协议进行二次开发等。
-
-# 渲染
-
-![render1](在此填入渲染图1链接)
-
-![render2](在此填入渲染图2链接)
-
-![render3](在此填入渲染图3链接)
 
 # 更新日志
 
