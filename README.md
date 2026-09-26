@@ -1,265 +1,270 @@
-**简体中文** | [English](README_en.md) | [日本語](README_jp.md)
+[简体中文](README_zh-CN.md) | **English** | [日本語](README_jp.md)
 
 # SphotographySP
 
-SphotographySP - 全屏地图式、把内容变成一场探索的 WordPress 摄影主题
+SphotographySP — A fullscreen map-based WordPress photography theme that turns content into exploration
 
-# 状态
+![Screenshot 1](./example_1.png)
+![Screenshot 2](./example_2.png)
 
-> 核心理念：**内容在后台，探索在前端。** 访客进入网站看到的不是文章列表，而是一整块占据视口的矢量地图 —— 每张带位置信息的照片都是地图上的一枚标记，点击即展开文章、翻页定位、飞向坐标。持续更新中，PR 与 Issue 欢迎提交。
+# Status
 
-SP 版本是由 [Larker](https://github.com/LarkerO) 分支维护的，目的是比 [Sphotography 原项目](https://github.com/ShirazuNagisa/sphotography/) 有新的支持、更现代的前端及更加去 AI 化的表达。
+> Core idea: **Manage content in the backend; explore it on the frontend.** Visitors arrive at a vector map filling the viewport. Each geotagged photo becomes a map marker: click to open its article, jump to the relevant page, and fly to its coordinates. Development is ongoing; pull requests and issues are welcome.
 
-# 特性
+The SP edition is a fork maintained by [Larker](https://github.com/LarkerO), aiming to provide additional support, a more modern frontend, and writing that feels less AI-generated than the [original Sphotography project](https://github.com/ShirazuNagisa/sphotography/).
 
-+ **全屏地图探索** - 基于 MapLibre GL JS 的矢量地图作为首页，CartoDB 底图（暗色 Dark Matter / 浅色 Positron），无需任何 API Token；照片化作水滴标记，邻近点经 gooey 滤镜实时「融合 / 分裂」聚合
-+ **夜间模式** - 跟随系统 / 强制浅色 / 强制暗色三档，深色方案另有 经典 / 蓝调 / 紫调 可选
-+ **边栏与文章** - 可展开 / 收起边栏、即时搜索（`Ctrl / ⌘ + K`）、分类与地域筛选、REST 加载全文，配 Windows DWM 式窗口缩放展开动画
-+ **照片墙** - 文章照片按日期分组、支持置顶、无限下拉加载、点击弹层查看含光圈 / 快门 / ISO 的 EXIF 详情，并可「查看拍摄位置」飞向地图
-+ **地图联动** - 点击标记浮出照片网格并随图跟随；桌面端点击网格照片以窗口动画展开文章并翻页定位到对应段落；点击文章内地理图片，后台地图平移后放大至 5km/1cm 停在面板右侧
-+ **自建评论系统** - REST 架构，支持 验证码、悄悄话、邮件提醒、Markdown、表情、点赞、置顶、编辑历史、UA、IP 属地、文字头像、折叠、分页
-+ **友链与留言板** - 复用 WordPress 链接管理器，mShots 自动缩略图、友链申请与审核，留言页复用评论引擎
-+ **AI 模块（实验性）** - 自带 Key（AES-256 加密存储、仅服务端调用）；文章补全 / 润色（可调感情风格与文案长度）、全文概述、AI 自动标签，支持单 / 双模型多模态识图写作，输出为原生区块 HTML
-+ **社交分享** - 微信二维码 / QQ / 空间 / 微博 / X / Facebook / 复制链接，单色主题色图标
-+ **多语言** - 前端 中 / A / あ 语言切换，静态词典 + 按需模型翻译 + 服务端缓存；文章译文在保存时预生成
-+ **数据统计** - 边栏展开页富统计与地区饼图、错落瀑布流文章列表、卡片字数与阅读量
-+ **地域着色** - `region_tag` 地域标签、行政区边界按需下载托管、地区筛选与地块统计、地图主题色滤镜
-+ **诸多细节** - 圆角磁吸光标（iPad 式）、浮动公告面板（可自动关闭）、文章内目录（TOC）、阅读进度、页面链接栏、文章封面模糊背景等
-+ **全局配置导出 / 导入** - 一键 JSON 导出 / 导入全部设置（含加密 API Key 明文往返、友链、留言板、地域颜色）
-+ **后台管理** - 独立顶级配置页、媒体库 EXIF 一键提取（GPS / 相机 / 日期）、CDN 来源切换（jsDelivr / unpkg / cdnjs）、GitHub 分支一键更新、可选后台 Sphotography 风格
-+ **技术特性** - 纯原生 JavaScript（无框架、零全局污染）、REST + PHP 内联数据双通道（403 自动回退）、CSS 变量驱动的设计系统、响应式三断点、无障碍友好并尊重「减弱动态」偏好
+# Features
 
-# 安装
++ **Fullscreen map exploration** — A MapLibre GL JS vector map serves as the homepage, with CartoDB basemaps (Dark Matter / Positron) and no API token required. Photos appear as droplet markers; nearby points merge and split in real time with a gooey filter.
++ **Night mode** — Follow the system, force light, or force dark; dark palettes include Classic, Blue, and Purple.
++ **Sidebar and articles** — Expandable sidebar, instant search (`Ctrl / ⌘ + K`), category and region filters, full articles loaded through REST, and Windows DWM-style window expansion animations.
++ **Photo wall** — Article photos grouped by date, pinned items, infinite scrolling, and detail overlays showing aperture, shutter speed, and ISO. “View shooting location” flies to the photo on the map.
++ **Map integration** — Clicking a marker opens a photo grid that follows the map. On desktop, selecting a photo opens its article with a window animation and navigates to the relevant section. Clicking a geotagged article image pans and zooms the background map to a 5 km/cm scale beside the panel.
++ **Custom comment system** — REST architecture with CAPTCHA, private comments, email notifications, Markdown, emoji, likes, pins, edit history, user-agent details, IP regions, text avatars, collapsing, and pagination.
++ **Friend links and guestbook** — Reuses WordPress link management, with automatic mShots thumbnails, link submissions and approval. The guestbook shares the comment engine.
++ **AI module (experimental)** — Bring your own API key, stored with AES-256 encryption and used only on the server. Article completion and polishing with adjustable tone and length, full-article summaries, automatic tags, and single- or dual-model multimodal writing from images, producing native block HTML.
++ **Social sharing** — WeChat QR codes, QQ, Qzone, Weibo, X, Facebook, and copy link, with monochrome icons in the theme color.
++ **Languages** — Frontend 中 / A / あ switching, a static dictionary, on-demand model translation, and server caching. Article translations are generated when saving.
++ **Statistics** — Detailed sidebar statistics, regional pie charts, masonry article lists, word counts, and view counts on cards.
++ **Regional coloring** — `region_tag` taxonomy, administrative boundaries downloaded and hosted on demand, regional filters and area counts, and map theme-color filters.
++ **Finishing touches** — Rounded magnetic cursor inspired by iPad, floating announcements with optional auto-close, article tables of contents, reading progress, page-link navigation, blurred article-cover backgrounds, and more.
++ **Configuration export / import** — One-click JSON export and import of all settings, including plaintext round-tripping of encrypted API keys, friend links, guestbook settings, and regional colors.
++ **Administration** — Dedicated top-level settings page, one-click EXIF extraction (GPS / camera / date), CDN selection (jsDelivr / unpkg / cdnjs), one-click updates from a GitHub branch, and optional Sphotography admin styling.
++ **Technical details** — Vanilla JavaScript without frameworks or global namespace pollution; REST and inline PHP data channels with automatic fallback on 403; CSS-variable design tokens; three responsive breakpoints; accessibility support and respect for reduced-motion preferences.
 
-在 [Release](https://github.com/LarkerO/sphotography/releases) 页面下载 .zip 文件，在 WordPress 后台 "外观 - 主题" 页面上传并安装启用。
+# Installation
 
-启用后主题会自动注册 `region_tag` 地域标签分类法，并创建「全屏地图」页面模板、设为静态首页。
+Download the .zip file from [Releases](https://github.com/LarkerO/sphotography/releases), then upload, install, and activate it under “Appearance → Themes” in WordPress.
 
-# 注意
+On activation, the theme registers the `region_tag` taxonomy, creates the “Fullscreen Map” page template, and sets it as the static homepage.
 
-当前版本采用 **GPL-3.0-only**，协议正文见 [LICENSE](LICENSE)。原声明为“GPL v2.0 or later”；仓库此前未包含协议正文，现将原声明记录于 [LICENSE.original.md](LICENSE.original.md)，并补存 GNU 官方 GPL v2 正文至 [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt)，仅供历史留档。
+# Repository layout and packaging
 
-# 项目结构与打包
+Theme sources live directly at the repository root: `style.css`, `functions.php`, `index.php`, `template-map.php`, `admin/`, `inc/`, and `assets/`. The `tests/`, `scripts/`, and `promo/` directories contain development or promotional materials.
 
-主题源码直接放在仓库根目录：`style.css`、`functions.php`、`index.php`、`template-map.php`、`admin/`、`inc/`、`assets/`。`tests/`、`scripts/`、`promo/` 为开发或宣传资料。
-
-在仓库根目录运行：
+Run from the repository root:
 
 ```powershell
 pwsh -File ./scripts/package-theme.ps1
 ```
 
-生成 `dist/Sphotography.zip`，ZIP 中保留一层 `Sphotography/` 主题目录，可直接从 WordPress「外观 → 主题 → 安装主题 → 上传主题」安装。脚本仅打包主题运行文件、截图和协议；不包含测试、构建缓存、宣传素材或旧压缩包。后台更新支持当前根目录结构，并兼容旧版嵌套结构。
+This creates `dist/Sphotography.zip`, with one enclosing `Sphotography/` theme directory. Install it through “Appearance → Themes → Add New Theme → Upload Theme” in WordPress. The script packages only runtime files, screenshots, and licenses, excluding tests, build caches, promotional assets, and old archives. The admin updater supports the current root layout and older nested releases.
 
-# 更新日志
+# Changelog
 
 ## 20260926 v1.6 SP
 
-+ 重构 主题源码迁至仓库根目录，新增一键打包脚本并兼容旧版更新目录。
++ Moved theme sources to the repository root; added one-command packaging and compatibility with older update layouts.
 
-+ 调整 个人信息与侧栏底部操作合并为一行，扩大文章列表空间；Theme / GitHub 移至统计面板「已运行」下方。
-+ 优化 地图缩放、明暗模式及语言按钮与侧栏共用明暗、圆角和玻璃样式；移除指南针并关闭鼠标、触屏和键盘旋转，始终北朝上。
-+ 修复 WordPress 后台全局样式及主题设置页未同步所选字体，网络字体与自托管地址同步生效。
++ Combined profile information and sidebar bottom controls into one row to give articles more room; moved Theme / GitHub below uptime in the statistics panel.
++ Unified map zoom, appearance, and language controls with the sidebar’s light/dark, rounded, and glass styles. Removed the compass and disabled mouse, touch, and keyboard rotation to keep north up.
++ Fixed selected fonts not applying to WordPress global admin styling and theme settings; webfonts and self-hosted sources now apply there too.
 
-+ 新增 后台「社交 → 友链管理」可随时从媒体库选择或上传图片更换缩略图，自动保存；异步抓图不会覆盖已手动更换的图片。
-+ 新增 友链左侧手柄鼠标拖拽排序，松开自动保存并同步前端；拖拽清除旧置顶状态，原置顶按钮继续可用。保存失败会回退并显示提示。
-+ 新增 「页脚」中的 ICP 备案号、公安网安备案号及查询链接，前端展示「备案号 | 自定义页脚内容」，空项自动隐藏，窄屏自动换行。
-+ 优化 页脚链接为白色无下划线，悬浮或键盘聚焦时变灰。
-+ 新增 MiSans、HarmonyOS Sans 前端字体选项，仅选中时加载固定版本的 jsDelivr 第三方网络字体；支持用自托管 CSS 地址替换默认字体源，加载失败回退系统字体。
-+ 修复 首页「搜索文章…」与展开页搜索框（含占位文本）未跟随后台字体设置的问题。
-+ 修复 重新抓取友链缩略图时未重置重试次数，以及慢速抓取任务覆盖友链顺序的问题。
++ Added thumbnail replacement at any time through “Social → Friend Links” using the media library or uploads, with automatic saving. Background fetching preserves manual replacements.
++ Added drag handles for friend-link sorting with automatic saving and frontend synchronization. Dragging clears existing pins; pin buttons remain available. Failed saves restore the previous order and show a message.
++ Added ICP and public-security registration numbers and lookup links in Footer settings. Displays “registration number | custom footer content”, hides empty items, and wraps on narrow screens.
++ Changed footer links to white without underlines, turning gray on hover or keyboard focus.
++ Added MiSans and HarmonyOS Sans options, loading pinned third-party jsDelivr webfonts only when selected. A self-hosted CSS URL can replace the default source; failed loads fall back to system fonts.
++ Fixed font settings not applying to the homepage “Search articles…” field and expanded-page search, including placeholders.
++ Fixed screenshot retries not resetting on refetch and slow background fetches overwriting friend-link order.
 
-字体部署：默认网络源分别来自 [misans-webfont](https://github.com/mobeicanyue/misans-webfont)（4.3.1，按字符切片）与 [harmonyos-fonts](https://github.com/IKKI2000/harmonyos-fonts)（固定提交版本，中文完整字体较大）。生产站点可将所选字体 CSS 及其引用的字体文件托管到自己的静态资源域名，在「前端字体」下填写 CSS URL；保留 CSS 中的 MiSans / HarmonyOS Sans SC 字体名称，配置正确的字体 MIME 与跨域访问。自托管文件放在主题目录之外，避免主题升级覆盖。
+Font deployment: default sources are [misans-webfont](https://github.com/mobeicanyue/misans-webfont) (4.3.1, character subsets) and [harmonyos-fonts](https://github.com/IKKI2000/harmonyos-fonts) (pinned commit; full Chinese font files are larger). Production sites can host the selected CSS and referenced font files on their own static domain and enter the CSS URL under “Frontend font”. Preserve the MiSans / HarmonyOS Sans SC family names and configure font MIME types and cross-origin access. Keep self-hosted files outside the theme directory to avoid overwriting them during upgrades.
 
 ## 20260806 v1.5.01
 
-+ 修复 分享链接直达单篇文章时无法渲染内容的问题（单文章 URL 现在会加载地图资源，并自动打开对应文章面板）
-+ 修复 后台「检查更新」无法识别 v1.4.91 这类多段版本号的问题，任意长度版本号均能正确比较
++ Fixed article content failing to render when opened directly through a shared link. Single-article URLs now load map assets and open the corresponding article panel automatically.
++ Fixed update checks failing to recognize versions such as v1.4.91; version numbers with any number of segments are now compared correctly.
 
 ## 20260720 v1.4.9
 
-+ 新增 全局设置 导出 / 导入 功能（JSON，含加密 API Key 明文往返、友链、留言板、地域颜色）
-+ 可变尺寸错落瀑布流文章卡片
-+ 展开页 ↔ 文章 改为两屏推拉滑动
-+ 展开按钮光标吸附、加长展开页搜索框
-+ 修复个人信息栏无法展开、地块重复计数、后台搜索图标重叠等问题
++ Added global JSON settings export / import, including plaintext round-tripping of encrypted API keys, friend links, guestbook settings, and regional colors.
++ Added variable-sized masonry article cards.
++ Changed expanded-list / article transitions to a two-screen sliding layout.
++ Added cursor attraction to the expand button and lengthened the expanded-page search field.
++ Fixed profile expansion, duplicate region counts, overlapping admin search icons, and related issues.
 
 ## 20260720 v1.4.8
 
-+ 新增 边栏展开页大卡片（富统计 + 地区饼图 + 瀑布流文章列表）
-+ 移除个人信息卡片，强制边栏；药丸搜索 + 圆形筛选按钮
-+ 文章内目录（TOC）加宽、手风琴滚动监听、顶端对齐
-+ 修复公告标题换行等问题
++ Added large expanded-sidebar cards with detailed statistics, regional pie charts, and a masonry article list.
++ Removed the profile card in favor of the sidebar; added pill-shaped search and a circular filter button.
++ Widened the article TOC, added accordion scroll tracking, and aligned it to the top.
++ Fixed announcement title wrapping and related issues.
 
 ## 20260720 v1.4.7
 
-+ 公告间距调整、目录重设计与修复
-+ 地区默认值 + 边界后台下载、强制地图首页
-+ 新增 PingFang / Songti 字体、iPad 圆点光标
-+ 懒加载优化、修复后台搜索图标重叠
++ Adjusted announcement spacing; redesigned and fixed the TOC.
++ Added regional defaults and admin boundary downloads; made the map the homepage.
++ Added PingFang / Songti fonts and an iPad-style dot cursor.
++ Improved lazy loading and fixed overlapping admin search icons.
 
 ## 20260719 v1.4.6
 
-+ 新增 文章索引；保存时预生成地理编码
-+ 公告重设计、筛选 FLIP 动画、GitHub 圆形图标
-+ 地理照片标注、照片墙按钮淡出、后台设置搜索
-+ 收起边栏头像、文章封面模糊背景、文章内目录
++ Added article indexing and geocoding generation on save.
++ Redesigned announcements; added FLIP filter animations and a circular GitHub icon.
++ Added geotagged-photo labels, fading photo-wall buttons, and admin settings search.
++ Added a collapsed-sidebar avatar, blurred cover backgrounds, and article TOCs.
 
 ## 20260719 v1.4.5
 
-+ 🖱️ 新增 圆角磁吸光标（iPad 式圆角 + 磁性吸附）
-+ 公告自动关闭
-+ 位置弹层 transform 冲突修复、下滑键→阅读 100%、关闭键固定到遮罩
-+ 重构仓库文件布局（源码收进 Sphotography/）
++ 🖱️ Added an iPad-inspired rounded magnetic cursor.
++ Added automatic announcement closing.
++ Fixed location-overlay transform conflicts; made the scroll-down button reach 100% reading progress and anchored the close button to the overlay.
++ Reorganized repository files, moving sources into Sphotography/.
 
 ## 20260719 v1.4.4
 
-+ 新增 浮动公告面板
-+ 文章译文在保存时预生成
-+ 阅读进度中点即 100% + 隐藏三键组、滚动时关闭键固定
-+ 位置弹层经反向地理编码代理显示在脉冲点下方、飞图收起地图照片面板
-+ 统一注释
++ Added floating announcement panels.
++ Pre-generated article translations on save.
++ Made reading progress reach 100% at the midpoint, hid the three-button group, and fixed the close button while scrolling.
++ Displayed location overlays below pulse markers via the reverse-geocoding proxy; closed map photo panels when flying to a location.
++ Standardized code comments.
 
 ## 20260719 v1.4.3
 
-+ 🌐 新增 中 / A / あ 语言切换（静态词典 UI + 按需模型翻译 + 服务端缓存）
-+ 修复配置页嵌套表单根因问题，恢复首页与保存
-+ 社交板块移至页面末尾
++ 🌐 Added 中 / A / あ language switching with a static UI dictionary, on-demand model translation, and server caching.
++ Fixed nested forms in settings, restoring homepage behavior and saving.
++ Moved social settings to the end of the page.
 
 ## 20260719 v1.4.2
 
-+ 配置页重构（大板块独立卡片 + 手风琴索引 + 丝滑滑下 + SVG 占位 + 预览卡）
-+ 边栏按钮永久圆形
-+ 页面链接栏 iOS 流动药丸
-+ 文章 / 友链 / 照片墙到底淡出底部毛玻璃
-+ 添加友链改居中弹窗
-+ 修复评论表情点击插入、配置页索引布局等问题
++ Rebuilt settings with separate section cards, an accordion index, smooth sliding, SVG placeholders, and preview cards.
++ Made sidebar buttons consistently circular.
++ Added iOS-style fluid pills to page-link navigation.
++ Faded bottom frosted-glass areas at the end of articles, friend links, and the photo wall.
++ Changed friend-link creation to a centered modal.
++ Fixed emoji insertion in comments, settings index layout, and related issues.
 
 ## 20260718 v1.4.1
 
-+ 设置页扁平化布局
-+ 照片墙改用 Web Animations API 消除闪烁
-+ 弹层 portal 到 body 避免裁剪
++ Flattened the settings-page layout.
++ Switched the photo wall to the Web Animations API to eliminate flicker.
++ Portaled overlays to the body to prevent clipping.
 
 ## 20260718 v1.4.0
 
-+ 新增 照片墙圆键弹层、地区筛选、EXIF 回填工具
-+ AI 打字机每次执行、配置索引二级菜单
-+ 设置页布局修复、友链后端校验
++ Added a circular photo-wall trigger and overlay, regional filtering, and EXIF backfill tools.
++ Ran the AI typewriter effect on each invocation; added second-level settings navigation.
++ Fixed settings layout and added server-side friend-link validation.
 
 ## 20260718 v1.3.9
 
-+ 🖼️ 新增 照片墙（文章照片 / 日期分组 / 置顶 / 无限下拉 / 详情 / 查看位置）
-+ EXIF 光圈、快门、ISO
-+ 后台配置页整行布局 + 预览非吸顶、面板右缘避让控件
-+ 修复友链 / 留言圆形 bug
++ 🖼️ Added the photo wall with article photos, date grouping, pins, infinite scrolling, details, and location viewing.
++ Added EXIF aperture, shutter speed, and ISO.
++ Added full-width admin settings rows and a non-sticky preview; kept the panel’s right edge clear of controls.
++ Fixed circular styling issues in friend links and the guestbook.
 
 ## 20260718 v1.3.8
 
-+ 后台友链 / 留言板配置修复并并入设置页
-+ 配置页大类重排（实时预览吸顶）
-+ 页面链接栏 FLIP 展开、面板空白 / 飞图关闭
-+ 浅色输入框修复、图片列表重复弹出修复
++ Fixed friend-link and guestbook administration and integrated it into settings.
++ Reorganized settings categories with a sticky live preview.
++ Added FLIP expansion to page links; closed panels on blank-area clicks or map flights.
++ Fixed light-mode inputs and duplicate image-list popups.
 
 ## 20260718 v1.3.7
 
-+ 边栏默认展开（桌面 / 移动分离）
-+ 新增 页面链接栏（友链 / 留言 / 外站）、友链页（mShots 缩略图 / 申请审核）、留言页（复用评论引擎）
-+ 文章顶底磨砂过渡带、微信二维码改内联 SVG
-+ 评论时间 / 点赞排序、评论 Markdown 工具栏
++ Added separate desktop/mobile defaults for sidebar expansion.
++ Added page-link navigation (friend links / guestbook / external sites), a friend-links page with mShots and application review, and a guestbook using the comment engine.
++ Added frosted transitions at article edges and changed WeChat QR codes to inline SVG.
++ Added comment sorting by time / likes and a Markdown toolbar.
 
 ## 20260717 v1.3.6
 
-+ 🤖 新增 AI 全文概述（后台异步生成 / 首开打字机 / 后台开关）
-+ AI 补全润色改到主编辑区审阅浮层（彩色打字机 / 润色词级差异高亮）
-+ 滚动按键相对页框静止修复
++ 🤖 Added AI article summaries with asynchronous generation, a first-open typewriter effect, and an admin toggle.
++ Moved AI completion and polishing into an editor review overlay with colored typewriting and word-level revision highlighting.
++ Fixed scroll buttons staying stationary relative to the page frame.
 
 ## 20260717 v1.3.5
 
-+ 新增 文章阅读量计数器（后台开关）、边栏卡片字数 / 阅读量
-+ 未保存离开保护
-+ 文章展开页滚动按键（回顶 / 到底 / 进度 % / 评论）
-+ 分享单色主题色图标（微信悬停二维码）、深色后台原生文字修复
++ Added an optional article view counter and word / view counts on sidebar cards.
++ Added unsaved-change protection when leaving.
++ Added article scroll controls for top, bottom, progress percentage, and comments.
++ Added monochrome theme-colored sharing icons with a WeChat QR code on hover; fixed native text in dark admin mode.
 
 ## 20260717 v1.3.4
 
-+ 新增 评论 IP 属地（离线 IP 库 / 懒解析）
-+ 新增 文章撰写地点（浏览器定位 + 离线反解析）
-+ 新增 社交分享栏（微信二维码 / QQ / 空间 / 微博 / X / Facebook / 复制链接）
-+ 后台配色修复（浅色原生文字 / 深色列表条纹 / 深色编辑器统一深底亮字）
++ Added comment IP regions using an offline database and lazy lookup.
++ Added article writing locations using browser geolocation and offline reverse lookup.
++ Added social sharing: WeChat QR, QQ, Qzone, Weibo, X, Facebook, and copy link.
++ Fixed admin colors: native text in light mode, striped lists in dark mode, and consistent light text on dark editor backgrounds.
 
 ## 20260717 v1.3.3
 
-+ 三重强制隐藏前台 WP 管理工具栏（修复过滤器被覆盖导致的隐藏失效）
++ Added three layers of frontend WordPress toolbar hiding to prevent overridden filters from restoring it.
 
 ## 20260717 v1.3.2
 
-+ 明暗三段开关、个人信息点击展开（卡片 / 边栏）
-+ 自定义链接、边栏交界渐隐过渡
-+ 隐藏前台 WP 管理工具栏
++ Added a three-way appearance switch and click-to-expand profile information in cards or the sidebar.
++ Added custom links and fading transitions at sidebar boundaries.
++ Hid the frontend WordPress admin toolbar.
 
 ## 20260717 v1.3.1
 
-+ 💬 评论系统重构（自建 REST）
-+ 支持 验证码 / 悄悄话 / 邮件提醒 / Markdown / 表情 / 点赞 / 置顶 / 编辑历史 / UA / 文字头像 / 折叠 / 分页
++ 💬 Rebuilt comments with a custom REST system.
++ Added CAPTCHA, private comments, email notifications, Markdown, emoji, likes, pins, edit history, user-agent details, text avatars, collapsing, and pagination.
 
 ## 20260717 v1.3.0
 
-+ 🤖 新增 AI 补全 / 润色 + 风格 / 长度调节
-+ 单 / 双模型多模态
-+ 编辑器面板浅色修复
++ 🤖 Added AI completion / polishing with adjustable style and length.
++ Added single- and dual-model multimodal support.
++ Fixed light-mode editor panels.
 
 ## 20260717 v1.2.9
 
-+ 新增 实验性 AI 模块（自带 Key，加密存储）
-+ 个人信息边栏一行展示方式（默认）
++ Added an experimental AI module with user-supplied keys and encrypted storage.
++ Made a single sidebar row the default profile layout.
 
 ## 20260716 v1.2.6 ~ v1.2.8
 
-+ 行政区边界数据改为按需下载到 uploads（不再打包进主题）
-+ 边界下载超时放宽、稳定性修复
++ Changed administrative boundaries to on-demand downloads into uploads instead of bundling them with the theme.
++ Increased boundary-download timeouts and improved stability.
 
 ## 20260716 v1.2.4
 
-+ 新增 阅读信息、地图样式模块、地图主题色滤镜
++ Added reading information, map-style settings, and theme-color map filters.
 
 ## 20260715 v1.2.0
 
-+ 主色调改为青绿色
-+ 修复深色模式下后台配置页表单控件可读性
-+ 全局后台 Sphotography 风格默认启用
++ Changed the primary color to teal.
++ Fixed readability of admin settings controls in dark mode.
++ Enabled global Sphotography admin styling by default.
 
 ## 20260715 v1.1.7
 
-+ 新增 Windows DWM 式文章最小化 / 还原动画
-+ 新增 Noto Serif SC 字体
-+ 完整 Gutenberg 兼容、边栏默认收起
++ Added Windows DWM-style article minimize / restore animations.
++ Added the Noto Serif SC font.
++ Added full Gutenberg compatibility and collapsed the sidebar by default.
 
 ## 20260714 v1.1.3 ~ v1.1.6
 
-+ 照片网格重构为动态多面板，移除 supercluster 依赖
-+ 收窄聚合半径、新增分裂 / 融合动画
-+ FLIP 动画 / 聚合过渡 / 网格互斥
-+ 全面前端优化（动效令牌 / 按键统一 / 毛玻璃分层 / 品牌化 Loading）
++ Rebuilt photo grids as dynamic multi-panel layouts and removed the supercluster dependency.
++ Reduced the clustering radius and added split / merge animations.
++ Added FLIP animations, cluster transitions, and mutually exclusive grids.
++ Refined the frontend with animation tokens, consistent buttons, glass layers, and branded loading visuals.
 
 ## 20260713 v1.1.0 ~ v1.1.2
 
-+ 聚合交互、位置追踪、单一网格、仅显示已发布文章图片
-+ 边栏页脚重设计、修复聚合交互
++ Improved cluster interaction and location tracking; used a single grid and displayed only photos from published articles.
++ Redesigned the sidebar footer and fixed cluster interaction.
 
 ## 20260713 v1.0.4
 
-+ 修复夜间模式 bug
-+ 新增可编辑内容页脚
-+ 校验地图标记
++ Fixed night-mode bugs.
++ Added an editable footer.
++ Added map-marker validation.
 
 ## 20260713 v1.0.1
 
-+ 浅色地图、边栏叠加
-+ "关于" 按钮位置调整
++ Added a light basemap and sidebar overlay.
++ Adjusted the “About” button position.
 
 ## 20260713 v1.0.0
 
-+ 正式版
-+ GitHub 更新器 + 内联数据回退
-+ 媒体库 EXIF GPS 自动检测、可编辑坐标 / 相机 / 日期字段
++ Stable release.
++ Added a GitHub updater and inline-data fallback.
++ Added automatic EXIF GPS detection in the media library and editable coordinates, camera, and date fields.
+
+# License
+
+The current version is licensed under **GPL-3.0-only**. See [LICENSE](LICENSE) for the full text.
+
+The original project declared “GPL v2.0 or later”, but the repository did not include the license text. The original declaration is recorded in [LICENSE.original.md](LICENSE.original.md), and the official GNU GPL v2 text is preserved in [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt) for historical reference only.
