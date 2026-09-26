@@ -37,7 +37,7 @@ SP 版本是由 [Larker](https://github.com/LarkerO) 分支维护的，目的是
 
 # 注意
 
-Sphotography 使用 [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) 协议开源，请遵守此协议进行二次开发等。
+当前版本采用 **GPL-3.0-only**，协议正文见 [LICENSE](LICENSE)。原声明为“GPL v2.0 or later”；仓库此前未包含协议正文，现将原声明记录于 [LICENSE.original.md](LICENSE.original.md)，并补存 GNU 官方 GPL v2 正文至 [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt)，仅供历史留档。
 
 # 更新日志
 

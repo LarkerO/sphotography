@@ -51,7 +51,7 @@ Check out the [User Wall](user wall link here) to see more blogs using this them
 
 # Note
 
-Sphotography is open-sourced under the [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) license. Please comply with this license for any derivative work.
+The current version is licensed under **GPL-3.0-only**; see [LICENSE](LICENSE). The previous declaration was “GPL v2.0 or later”. No license text was previously included in the repository; the original declaration is recorded in [LICENSE.original.md](LICENSE.original.md), with the official GNU GPL v2 text archived in [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt) for historical reference only.
 
 # Screenshots
 

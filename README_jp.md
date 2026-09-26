@@ -51,7 +51,7 @@ Sphotography — 全画面マップ型のWordPress写真テーマ。コンテン
 
 # 注意
 
-Sphotography は [GPL v2.0 or later](https://github.com/ShirazuNagisa/sphotography/blob/master/LICENSE) ライセンスでオープンソース公開されています。二次開発などの際は本ライセンスに従ってください。
+現在のバージョンには **GPL-3.0-only** を適用します。全文は [LICENSE](LICENSE) を参照してください。従来の表記は「GPL v2.0 or later」でした。以前のリポジトリにはライセンス本文がなかったため、元の表記を [LICENSE.original.md](LICENSE.original.md) に記録し、GNU 公式の GPL v2 本文を [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt) に履歴資料として保存しています。
 
 # スクリーンショット
 
