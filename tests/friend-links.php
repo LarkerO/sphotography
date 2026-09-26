@@ -20,7 +20,7 @@ function wp_remote_get(...$args) {
 }
 function is_wp_error($value) { return $value === false; }
 function wp_schedule_single_event(...$args) {}
-require __DIR__ . '/../Sphotography/inc/friend-links.php';
+require __DIR__ . '/../inc/friend-links.php';
 function check($condition, $label) { if (!$condition) throw new RuntimeException($label); }
 function request($data, $expected) {
     $_POST = $data;

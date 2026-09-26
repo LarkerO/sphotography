@@ -1114,7 +1114,7 @@ function sphotography_ajax_do_update() {
     }
 
     $theme_dir = get_template_directory();
-    $zip_url   = 'https://github.com/ShirazuNagisa/sphotography/archive/refs/heads/' . $branch . '.zip';
+    $zip_url   = 'https://github.com/LarkerO/sphotography/archive/refs/heads/' . $branch . '.zip';
     $tmp_zip   = wp_tempnam( 'sphotography-update' );
 
     // Download ZIP
@@ -1152,17 +1152,18 @@ function sphotography_ajax_do_update() {
     }
     $src_dir = $extracted[0];
 
-    // v1.4.5: theme source now lives in a nested `Sphotography/` folder inside the
-    // repo (dev files kept at repo root so they aren't shipped). The GitHub archive
-    // therefore contains sphotography-<branch>/Sphotography/style.css — copy from
-    // that subfolder so only the theme files land in the theme dir. Fall back to the
-    // archive root for older branches that pre-date the reorg.
-    if ( is_dir( $src_dir . '/Sphotography' ) && file_exists( $src_dir . '/Sphotography/style.css' ) ) {
-        $src_dir = $src_dir . '/Sphotography';
+    // Prefer the repository-root theme; keep compatibility with older nested releases.
+    if ( ! file_exists( $src_dir . '/style.css' ) && file_exists( $src_dir . '/Sphotography/style.css' ) ) {
+        $src_dir .= '/Sphotography';
+    }
+    if ( ! file_exists( $src_dir . '/style.css' ) || ! file_exists( $src_dir . '/functions.php' ) ) {
+        sphotography_rrmdir( $unzip_dir );
+        wp_send_json_error( 'Theme source not found in archive' );
     }
 
-    // Copy all files from src to theme directory, overwriting
-    $copied = copy_dir( $src_dir, $theme_dir );
+    // Repository-only content must not be copied into an installed theme.
+    $skip = array( '.git', '.github', '.gitignore', '.gitattributes', '.geo-build', '.svg-build', '.pkg-tmp', '.release-notes.md', '.releaseignore', 'tests', 'scripts', 'promo', 'dist', 'Sphotography.zip' );
+    $copied = copy_dir( $src_dir, $theme_dir, $skip );
 
     // Cleanup temp
     sphotography_rrmdir( $unzip_dir );

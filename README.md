@@ -39,9 +39,23 @@ SP 版本是由 [Larker](https://github.com/LarkerO) 分支维护的，目的是
 
 当前版本采用 **GPL-3.0-only**，协议正文见 [LICENSE](LICENSE)。原声明为“GPL v2.0 or later”；仓库此前未包含协议正文，现将原声明记录于 [LICENSE.original.md](LICENSE.original.md)，并补存 GNU 官方 GPL v2 正文至 [LICENSE-GPL-2.0.original.txt](LICENSE-GPL-2.0.original.txt)，仅供历史留档。
 
+# 项目结构与打包
+
+主题源码直接放在仓库根目录：`style.css`、`functions.php`、`index.php`、`template-map.php`、`admin/`、`inc/`、`assets/`。`tests/`、`scripts/`、`promo/` 为开发或宣传资料。
+
+在仓库根目录运行：
+
+```powershell
+pwsh -File ./scripts/package-theme.ps1
+```
+
+生成 `dist/Sphotography.zip`，ZIP 中保留一层 `Sphotography/` 主题目录，可直接从 WordPress「外观 → 主题 → 安装主题 → 上传主题」安装。脚本仅打包主题运行文件、截图和协议；不包含测试、构建缓存、宣传素材或旧压缩包。后台更新支持当前根目录结构，并兼容旧版嵌套结构。
+
 # 更新日志
 
 ## 20260926 v1.6 SP
+
++ 重构 主题源码迁至仓库根目录，新增一键打包脚本并兼容旧版更新目录。
 
 + 调整 个人信息与侧栏底部操作合并为一行，扩大文章列表空间；Theme / GitHub 移至统计面板「已运行」下方。
 + 优化 地图缩放、明暗模式及语言按钮与侧栏共用明暗、圆角和玻璃样式；移除指南针并关闭鼠标、触屏和键盘旋转，始终北朝上。
@@ -249,9 +263,3 @@ SP 版本是由 [Larker](https://github.com/LarkerO) 分支维护的，目的是
 + 正式版
 + GitHub 更新器 + 内联数据回退
 + 媒体库 EXIF GPS 自动检测、可编辑坐标 / 相机 / 日期字段
-
-# 捐赠
-
-如果你觉得 Sphotography 主题不错，可以请我一顿KFC来支持我的开发。
-
-![donate](在此填入赞赏码图片链接)

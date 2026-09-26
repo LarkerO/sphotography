@@ -61,9 +61,15 @@ Sphotography — 全画面マップ型のWordPress写真テーマ。コンテン
 
 ![render3](レンダリング画像3リンク)
 
+# 構成とパッケージ作成
+
+テーマのソースはリポジトリ直下の `style.css`、`functions.php`、`index.php`、`template-map.php`、`admin/`、`inc/`、`assets/` に配置しています。ルートで `pwsh -File ./scripts/package-theme.ps1` を実行すると `dist/Sphotography.zip` を生成します。ZIP 内には `Sphotography/` が一階層あり、WordPress に直接アップロードできます。テスト、キャッシュ、宣伝素材、古い ZIP は含みません。更新機能は旧構成にも対応します。
+
 # 更新履歴
 
 ## 20260926 v1.6 SP
+
++ テーマをリポジトリ直下へ移動し、パッケージ作成スクリプトと旧構成の更新互換を追加。
 
 + プロフィールと操作ボタンをサイドバー最下部の一行に統合。Theme / GitHub は稼働時間の下へ移動。
 + 地図操作の外観をサイドバーに統一し、コンパスを削除。マウス・タッチ・キーボードでの回転を無効化し、常に北を上に固定。

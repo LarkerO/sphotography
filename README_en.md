@@ -61,9 +61,15 @@ The current version is licensed under **GPL-3.0-only**; see [LICENSE](LICENSE). 
 
 ![render3](render image 3 link here)
 
+# Repository layout and packaging
+
+Theme sources now live at the repository root: `style.css`, `functions.php`, `index.php`, `template-map.php`, `admin/`, `inc/` and `assets/`. Run `pwsh -File ./scripts/package-theme.ps1` from the root to create `dist/Sphotography.zip`. The archive contains one `Sphotography/` theme folder and can be uploaded directly in WordPress. Tests, build caches, promotional assets and old archives are excluded. The updater supports both the root layout and older nested releases.
+
 # Changelog
 
 ## 20260926 v1.6 SP
+
++ Move theme sources to the repository root; add a packaging script and retain legacy update compatibility.
 
 + Merge profile controls into the sidebar bottom row and move Theme / GitHub below uptime to give articles more room.
 + Match map controls to sidebar styling, remove the compass, and disable mouse, touch and keyboard rotation to keep north up.

@@ -44,8 +44,12 @@ wsl_update_x64.msi
 
 # Boundary data is hosted on the `geo-data` branch (served via jsDelivr) and
 # downloaded on demand into uploads/ — never shipped in the theme package or
-# the master update archive. (v1.4.5: theme source moved under Sphotography/.)
-Sphotography/assets/geo/
+# the master update archive.
+/assets/geo/
 
 # Release packaging exclude list — local tooling helper (see its header)
 .releaseignore
+# Local packaging and generated artwork
+/.pkg-tmp/
+/.svg-build/
+/dist/

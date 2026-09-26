@@ -1,0 +1,11 @@
+# Exclude development-only content from git archives.
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/.geo-build export-ignore
+/.svg-build export-ignore
+/.pkg-tmp export-ignore
+/.release-notes.md export-ignore
+/tests export-ignore
+/scripts export-ignore
+/promo export-ignore
+/dist export-ignore

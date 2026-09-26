@@ -2,8 +2,8 @@
 //
 // Produces two normalized GeoJSON files consumed by both the server-side
 // point-in-polygon indexer (PHP) and the frontend renderer (MapLibre):
-//   Sphotography/assets/geo/boundaries-provinces.json  — DataV China provinces + Natural Earth 10m admin-1 (ex-China)
-//   Sphotography/assets/geo/boundaries-cities.json     — DataV China city/district level
+//   assets/geo/boundaries-provinces.json  — DataV China provinces + Natural Earth 10m admin-1 (ex-China)
+//   assets/geo/boundaries-cities.json     — DataV China city/district level
 //
 // Normalized feature.properties schema:
 //   id    : string  — stable region id (China: 6-digit adcode; world: NE adm1_code)
@@ -18,8 +18,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 
-// v1.4.5: theme source moved under repo-root `Sphotography/` for release isolation.
-const OUT = path.resolve('../Sphotography/assets/geo');
+// Theme sources now live at the repository root.
+const OUT = path.resolve('../assets/geo');
 fs.mkdirSync(OUT, { recursive: true });
 const DATAV = (adcode) => `https://geo.datav.aliyun.com/areas_v3/bound/${adcode}_full.json`;
 
