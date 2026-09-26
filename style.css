@@ -4596,7 +4596,7 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
 .sp-loc-popup {
     /* v1.4.5 (item 5): the marker root is left untouched so MapLibre owns its
        transform (translate positioning); animation lives on .sp-loc-popup-inner. */
-    pointer-events: none;
+    pointer-events: auto;
     max-width: 260px;
 }
 .sp-loc-popup-inner {
@@ -4622,9 +4622,10 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
     white-space: nowrap;
     max-width: 260px;
     overflow: hidden;
+    font-family: inherit;
 }
 .sp-loc-popup-coord {
-    font-family: var(--font-mono, ui-monospace, monospace);
+    font-family: inherit;
     font-size: 0.72rem;
     letter-spacing: 0.02em;
     color: var(--text-secondary);
@@ -4632,7 +4633,7 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
 .sp-loc-popup-name {
     margin-top: 2px;
     font-size: 0.82rem;
-    font-weight: 600;
+    font-weight: 400;
     color: var(--text-primary);
     max-width: 236px;
     overflow: hidden;
@@ -4640,6 +4641,32 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
     white-space: normal;
     word-break: break-word;
 }
+.sp-loc-popup-primary,
+.sp-loc-popup-admin { display: block; }
+.sp-loc-popup-admin { font-weight: 600; }
+.sp-loc-popup-actions {
+    display: flex;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 7px;
+}
+.sp-loc-popup-map-link,
+.sp-loc-popup-map-link:visited {
+    display: inline-flex;
+    align-items: center;
+    min-height: 26px;
+    padding: 2px 9px;
+    border: 1px solid var(--color-border, rgba(127,127,127,.25));
+    border-radius: 999px;
+    color: var(--text-primary);
+    background: var(--color-surface-hover, rgba(127,127,127,.12));
+    font-size: 0.72rem;
+    font-weight: 500;
+    line-height: 1;
+    text-decoration: none;
+}
+.sp-loc-popup-map-link:hover,
+.sp-loc-popup-map-link:focus-visible { color: var(--primary); }
 
 /* ---------------------------------------------------------------
    Tag colour legend (v1.2.5) — a compact, collapsible key of the

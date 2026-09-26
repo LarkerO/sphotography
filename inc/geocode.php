@@ -63,11 +63,11 @@ function sphotography_geocode_coord_hash( $lat, $lng ) {
 	return md5( number_format( (float) $lat, 5, '.', '' ) . ',' . number_format( (float) $lng, 5, '.', '' ) );
 }
 function sphotography_geocode_transient_key( $lang, $lat, $lng ) {
-	return 'sp_geo_' . $lang . '_' . sphotography_geocode_coord_hash( $lat, $lng );
+	return 'sp_geo_v2_' . $lang . '_' . sphotography_geocode_coord_hash( $lat, $lng );
 }
 // 持久层 option 名（≤ 44 字符，远低于 wp_options 191 上限）
 function sphotography_geocode_persist_key( $lang, $lat, $lng ) {
-	return 'sp_geo_p_' . $lang . '_' . sphotography_geocode_coord_hash( $lat, $lng );
+	return 'sp_g2_' . $lang . '_' . sphotography_geocode_coord_hash( $lat, $lng );
 }
 function sphotography_geocode_get_persistent( $lang, $lat, $lng ) {
 	$v = get_option( sphotography_geocode_persist_key( $lang, $lat, $lng ), false );
@@ -89,42 +89,50 @@ function sphotography_geocode_valid_coord( $lat, $lng ) {
 /**
  * 统一解析器：坐标 + 语言 → 地名。查找顺序 transient → 持久层 → 上游。
  * 上游成功后同时写入两层。$allow_remote=false 时只读缓存（不触发网络）。
- * 失败返回 ''。
+ * 失败返回空数组。
  */
-function sphotography_geocode_resolve( $lat, $lng, $lang, $allow_remote = true ) {
+function sphotography_geocode_resolve_details( $lat, $lng, $lang, $allow_remote = true ) {
 	if ( ! in_array( $lang, array( 'zh', 'en', 'ja' ), true ) ) {
 		$lang = 'zh';
 	}
 	if ( ! sphotography_geocode_valid_coord( $lat, $lng ) ) {
-		return '';
+		return array();
 	}
 	$lat = (float) $lat; $lng = (float) $lng;
 
 	$tkey = sphotography_geocode_transient_key( $lang, $lat, $lng );
 	$cached = get_transient( $tkey );
 	if ( false !== $cached ) {
-		return (string) $cached;
+		$details = json_decode( (string) $cached, true );
+		if ( is_array( $details ) ) return $details;
 	}
 
 	$persist = sphotography_geocode_get_persistent( $lang, $lat, $lng );
 	if ( false !== $persist ) {
 		// 回填 transient，供后续快速命中。
 		set_transient( $tkey, $persist, SPHOTOGRAPHY_GEOCODE_CACHE_TTL );
-		return $persist;
+		$details = json_decode( (string) $persist, true );
+		if ( is_array( $details ) ) return $details;
 	}
 
 	if ( ! $allow_remote ) {
-		return '';
+		return array();
 	}
 
-	$name = sphotography_geocode_lookup( $lat, $lng, $lang );
-	if ( is_wp_error( $name ) ) {
+	$details = sphotography_geocode_lookup_details( $lat, $lng, $lang );
+	if ( is_wp_error( $details ) ) {
 		// 上游失败不缓存，前端会退化为只显示经纬度。
-		return '';
+		return array();
 	}
-	set_transient( $tkey, $name, SPHOTOGRAPHY_GEOCODE_CACHE_TTL );
-	sphotography_geocode_set_persistent( $lang, $lat, $lng, $name );
-	return $name;
+	$encoded = wp_json_encode( $details, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES );
+	set_transient( $tkey, $encoded, SPHOTOGRAPHY_GEOCODE_CACHE_TTL );
+	sphotography_geocode_set_persistent( $lang, $lat, $lng, $encoded );
+	return $details;
+}
+
+function sphotography_geocode_resolve( $lat, $lng, $lang, $allow_remote = true ) {
+	$details = sphotography_geocode_resolve_details( $lat, $lng, $lang, $allow_remote );
+	return isset( $details['name'] ) ? (string) $details['name'] : '';
 }
 
 // REST 回调：坐标 → 详细地名（惰性回退：未命中时实时调用并写入持久层）
@@ -138,12 +146,12 @@ function sphotography_geocode_rest_reverse( WP_REST_Request $request ) {
 	if ( ! sphotography_geocode_valid_coord( $lat, $lng ) ) {
 		return rest_ensure_response( array( 'name' => '', 'lat' => $lat, 'lng' => $lng ) );
 	}
-	$name = sphotography_geocode_resolve( $lat, $lng, $lang, true );
-	return rest_ensure_response( array( 'name' => (string) $name, 'lat' => $lat, 'lng' => $lng ) );
+	$details = sphotography_geocode_resolve_details( $lat, $lng, $lang, true );
+	return rest_ensure_response( array_merge( array( 'name' => '', 'primary' => '', 'admin' => '', 'is_china' => false ), $details, array( 'lat' => $lat, 'lng' => $lng ) ) );
 }
 
 // 请求上游逆地理编码服务
-function sphotography_geocode_lookup( $lat, $lng, $lang ) {
+function sphotography_geocode_lookup_details( $lat, $lng, $lang ) {
 	$endpoint = sphotography_geocode_endpoint();
 	$args_url = array(
 		'format'          => 'jsonv2',
@@ -178,25 +186,59 @@ function sphotography_geocode_lookup( $lat, $lng, $lang ) {
 		return new WP_Error( 'geocode_parse', 'Reverse geocode: bad response' );
 	}
 
-	// 优先 display_name（最详细），否则用 name，否则由 address 组装。
-	if ( ! empty( $data['display_name'] ) ) {
-		return sphotography_geocode_trim_name( (string) $data['display_name'] );
-	}
-	if ( ! empty( $data['name'] ) ) {
-		return sphotography_geocode_trim_name( (string) $data['name'] );
-	}
-	if ( ! empty( $data['address'] ) && is_array( $data['address'] ) ) {
-		$parts = array();
-		foreach ( array( 'road', 'neighbourhood', 'suburb', 'city_district', 'city', 'town', 'village', 'county', 'state', 'country' ) as $f ) {
-			if ( ! empty( $data['address'][ $f ] ) ) {
-				$parts[] = (string) $data['address'][ $f ];
-			}
+	$address  = ( ! empty( $data['address'] ) && is_array( $data['address'] ) ) ? $data['address'] : array();
+	$is_china = ( isset( $address['country_code'] ) && 'cn' === strtolower( (string) $address['country_code'] ) )
+		|| ( isset( $address['country'] ) && in_array( (string) $address['country'], array( '中国', '中國', 'China' ), true ) );
+	$unique = static function ( $parts ) {
+		$out = array();
+		foreach ( $parts as $part ) {
+			$part = trim( (string) $part );
+			if ( '' !== $part && ! in_array( $part, $out, true ) ) $out[] = $part;
 		}
-		if ( ! empty( $parts ) ) {
-			return sphotography_geocode_trim_name( implode( ', ', array_slice( $parts, 0, 6 ) ) );
-		}
+		return $out;
+	};
+	$get = static function ( $keys ) use ( $address ) {
+		foreach ( $keys as $key ) if ( ! empty( $address[ $key ] ) ) return (string) $address[ $key ];
+		return '';
+	};
+
+	if ( $is_china ) {
+		$poi = ! empty( $data['name'] ) ? (string) $data['name'] : $get( array( 'amenity', 'building', 'tourism', 'shop', 'office', 'leisure' ) );
+		$road = $get( array( 'road', 'pedestrian', 'footway' ) );
+		if ( $road && ! empty( $address['house_number'] ) ) $road .= (string) $address['house_number'] . '号';
+		$primary_parts = $unique( array( $poi, $road, $get( array( 'neighbourhood', 'quarter', 'suburb', 'residential', 'village' ) ) ) );
+		$admin_parts   = $unique( array(
+			$get( array( 'state', 'province' ) ),
+			$get( array( 'city', 'municipality', 'town' ) ),
+			$get( array( 'city_district', 'district', 'county' ) ),
+		) );
+		$primary = implode( '，', $primary_parts );
+		$admin   = implode( '', $admin_parts );
+		$name    = implode( '，', array_filter( array( $primary, $admin ) ) );
+	} else {
+		// 海外地址保留 Nominatim 的原始小到大次序，仅移除邮编和国家。
+		$parts = ! empty( $data['display_name'] ) ? preg_split( '/\s*,\s*/u', (string) $data['display_name'] ) : array();
+		$remove = array_filter( array( isset( $address['postcode'] ) ? $address['postcode'] : '', isset( $address['country'] ) ? $address['country'] : '' ) );
+		$parts = array_values( array_filter( $parts, static function ( $part ) use ( $remove ) { return ! in_array( trim( $part ), $remove, true ); } ) );
+		$name = implode( ', ', $unique( $parts ) );
+		if ( '' === $name && ! empty( $data['name'] ) ) $name = (string) $data['name'];
+		$primary = $name;
+		$admin = '';
+	}
+	if ( '' !== $name ) {
+		return array(
+			'name'     => sphotography_geocode_trim_name( $name ),
+			'primary'  => sphotography_geocode_trim_name( $primary ),
+			'admin'    => sphotography_geocode_trim_name( $admin ),
+			'is_china' => $is_china,
+		);
 	}
 	return new WP_Error( 'geocode_empty', 'Reverse geocode: no name' );
+}
+
+function sphotography_geocode_lookup( $lat, $lng, $lang ) {
+	$details = sphotography_geocode_lookup_details( $lat, $lng, $lang );
+	return is_wp_error( $details ) ? $details : (string) $details['name'];
 }
 
 // 归一化地名

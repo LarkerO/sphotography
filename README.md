@@ -19,7 +19,7 @@ The SP edition is a fork maintained by [Larker](https://github.com/LarkerO), aim
 + **Night mode** — Follow the system, force light, or force dark; dark palettes include Classic, Blue, and Purple.
 + **Sidebar and articles** — Expandable sidebar, instant search (`Ctrl / ⌘ + K`), category and region filters, full articles loaded through REST, and Windows DWM-style window expansion animations.
 + **Photo wall** — Article photos grouped by date, pinned items, infinite scrolling, and detail overlays showing aperture, shutter speed, and ISO. “View shooting location” flies to the photo on the map.
-+ **Map integration** — Clicking a marker opens a photo grid that follows the map. On desktop, selecting a photo opens its article with a window animation and navigates to the relevant section. Clicking a geotagged article image pans and zooms the background map to a 5 km/cm scale beside the panel.
++ **Map integration** — Clicking a marker opens a photo grid that follows the map. On desktop, selecting a photo opens its article with a window animation and navigates to the relevant section. Clicking a geotagged article image pans and zooms the background map to a 5 km/cm scale beside the panel, then shows a localized address card with links to view the location in Amap or Baidu Maps.
 + **Custom comment system** — REST architecture with CAPTCHA, private comments, email notifications, Markdown, emoji, likes, pins, edit history, user-agent details, IP regions, text avatars, collapsing, and pagination.
 + **Friend links and guestbook** — Reuses WordPress link management, with automatic mShots thumbnails, link submissions and approval. The guestbook shares the comment engine.
 + **AI module (experimental)** — Bring your own API key, stored with AES-256 encryption and used only on the server. Article completion and polishing with adjustable tone and length, full-article summaries, automatic tags, and single- or dual-model multimodal writing from images, producing native block HTML.
@@ -59,6 +59,7 @@ This creates `dist/Sphotography.zip`, with one enclosing `Sphotography/` theme d
 + Combined profile information and sidebar bottom controls into one row to give articles more room; moved Theme / GitHub below uptime in the statistics panel.
 + Unified map zoom, appearance, and language controls with the sidebar’s light/dark, rounded, and glass styles. Removed the compass and disabled mouse, touch, and keyboard rotation to keep north up.
 + Fixed selected fonts not applying to WordPress global admin styling and theme settings; webfonts and self-hosted sources now apply there too.
++ Improved photo-location cards: country and postal-code noise is removed; Chinese addresses show the specific place on one regular-weight line and province → city → district/county on a bold second line, while non-Chinese address order is preserved. Coordinates now use the selected site font, and WGS-84 links open the point in a new Amap or Baidu Maps tab.
 
 + Added thumbnail replacement at any time through “Social → Friend Links” using the media library or uploads, with automatic saving. Background fetching preserves manual replacements.
 + Added drag handles for friend-link sorting with automatic saving and frontend synchronization. Dragging clears existing pins; pin buttons remain available. Failed saves restore the previous order and show a message.

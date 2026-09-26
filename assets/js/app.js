@@ -6249,7 +6249,11 @@
           +   '<span class="sp-loc-popup-arrow" aria-hidden="true"></span>'
           +   '<div class="sp-loc-popup-body">'
           +     '<div class="sp-loc-popup-coord">' + escapeHtml(locPopupCoordText(wgs)) + '</div>'
-          +     '<div class="sp-loc-popup-name">' + escapeHtml(t('解析中…')) + '</div>'
+          +     '<div class="sp-loc-popup-name"><span class="sp-loc-popup-primary">' + escapeHtml(t('解析中…')) + '</span></div>'
+          +     '<div class="sp-loc-popup-actions">'
+          +       '<a class="sp-loc-popup-map-link" target="_blank" rel="noopener noreferrer" href="' + escapeHtml(locationMapUrl('amap', wgs)) + '">' + escapeHtml(t('高德地图')) + '</a>'
+          +       '<a class="sp-loc-popup-map-link" target="_blank" rel="noopener noreferrer" href="' + escapeHtml(locationMapUrl('baidu', wgs)) + '">' + escapeHtml(t('百度地图')) + '</a>'
+          +     '</div>'
           +   '</div>'
           + '</div>';
         var inner = el.querySelector('.sp-loc-popup-inner');
@@ -6276,13 +6280,39 @@
 
         // Async reverse-geocode using the TRUE WGS-84 coordinate (the geocoding
         // service expects real GPS, not the GCJ-02-shifted display position).
-        fetchReverseGeocode(wgs).then(function (name) {
+        fetchReverseGeocode(wgs).then(function (place) {
             if (!state.locPopup || state.locPopup.token !== token || state.locPopup.closing) return;
             var nameEl = el.querySelector('.sp-loc-popup-name');
             if (!nameEl) return;
-            if (name) { nameEl.textContent = name; }
+            if (place && place.name) {
+                nameEl.innerHTML = '';
+                if (place.primary) {
+                    var primary = document.createElement('span');
+                    primary.className = 'sp-loc-popup-primary';
+                    primary.textContent = place.primary;
+                    nameEl.appendChild(primary);
+                }
+                if (place.admin) {
+                    var admin = document.createElement('strong');
+                    admin.className = 'sp-loc-popup-admin';
+                    admin.textContent = place.admin;
+                    nameEl.appendChild(admin);
+                }
+                if (!place.primary && !place.admin) nameEl.textContent = place.name;
+            }
             else { nameEl.remove(); } // resolve failed → keep only lng/lat
         });
+    }
+
+    function locationMapUrl(provider, coords) {
+        var lat = Number(coords[1]).toFixed(7), lng = Number(coords[0]).toFixed(7);
+        if (provider === 'baidu') {
+            return 'https://api.map.baidu.com/marker?location=' + encodeURIComponent(lat + ',' + lng)
+                + '&title=' + encodeURIComponent(t('照片位置')) + '&content=' + encodeURIComponent(t('照片位置'))
+                + '&output=html&coord_type=wgs84&src=webapp.sphotography.theme';
+        }
+        return 'https://uri.amap.com/marker?position=' + encodeURIComponent(lng + ',' + lat)
+            + '&name=' + encodeURIComponent(t('照片位置')) + '&src=sphotography&coordinate=wgs84&callnative=0';
     }
 
     function removeLocationPopup(instant) {
@@ -6312,8 +6342,8 @@
             + '&lang=' + encodeURIComponent((typeof siteLang === 'string' && siteLang) ? siteLang : 'zh');
         return fetch(url, { headers: { 'Accept': 'application/json' } })
             .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) { return (d && d.name) ? String(d.name) : ''; })
-            .catch(function () { return ''; });
+            .then(function (d) { return (d && d.name) ? d : null; })
+            .catch(function () { return null; });
     }
 
     // ---------------------------------------------------------------
