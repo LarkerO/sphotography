@@ -1,6 +1,58 @@
 <?php
 if (!defined('ABSPATH')) exit;
 function sphotography_get_friend_links() { return get_option('sphotography_friend_links', array()); }
+function sphotography_sort_friend_links(&$links) {
+    usort($links, function ($a, $b) {
+        $pin = (int) !empty($b['pinned']) - (int) !empty($a['pinned']);
+        if ($pin) return $pin;
+        $order = ($a['sort_order'] ?? PHP_INT_MAX) <=> ($b['sort_order'] ?? PHP_INT_MAX);
+        if ($order) return $order;
+        $added = (int) ($a['added'] ?? 0) <=> (int) ($b['added'] ?? 0);
+        return $added ?: ((int) $a['id'] <=> (int) $b['id']);
+    });
+}
+// Separate AJAX actions avoid nesting new forms inside the settings form.
+add_action('wp_ajax_sphotography_friend_edit', 'sphotography_ajax_friend_edit');
+function sphotography_ajax_friend_edit() {
+    if (!current_user_can('manage_options')) wp_send_json_error(array('message' => '权限不足。'), 403);
+    check_ajax_referer('sphotography_friend_links', 'nonce');
+    $links = sphotography_get_friend_links();
+    $action = sanitize_key($_POST['operation'] ?? '');
+    if ('thumbnail' === $action) {
+        $id = absint($_POST['id'] ?? 0);
+        $thumb = absint($_POST['thumb_id'] ?? 0);
+        if (!$thumb || !wp_attachment_is_image($thumb) || !current_user_can('upload_files')) {
+            wp_send_json_error(array('message' => '请选择媒体库中的有效图片。'), 400);
+        }
+        $found = false;
+        foreach ($links as &$link) {
+            if ((int) $link['id'] !== $id) continue;
+            $link['thumb_id'] = $thumb;
+            $link['thumb_attempts'] = 0;
+            $found = true;
+        }
+        unset($link);
+        if (!$found) wp_send_json_error(array('message' => '友链已不存在，请刷新页面。'), 404);
+        sphotography_update_friend_links($links);
+        wp_send_json_success(array('url' => wp_get_attachment_image_url($thumb, 'thumbnail')));
+    } elseif ('reorder' === $action) {
+        $ids = isset($_POST['ids']) && is_array($_POST['ids']) ? array_map('absint', $_POST['ids']) : array();
+        $existing = array_map('intval', array_column($links, 'id'));
+        $submitted = $ids;
+        sort($existing); sort($submitted);
+        if ($existing !== $submitted) wp_send_json_error(array('message' => '友链列表已变化，请刷新页面后重试。'), 409);
+        $positions = array_flip($ids);
+        foreach ($links as &$link) {
+            $link['sort_order'] = $positions[(int) $link['id']];
+            // A manual order supersedes the previous pin order, including across groups.
+            $link['pinned'] = 0;
+        }
+        unset($link);
+        sphotography_update_friend_links($links);
+        wp_send_json_success();
+    }
+    wp_send_json_error(array('message' => '未知操作。'), 400);
+}
 function sphotography_get_friend_link_applications() { return get_option('sphotography_friend_link_apps', array()); }
 function sphotography_get_friend_link_notify() { return get_option('sphotography_friend_link_notify', '1'); }
 function sphotography_update_friend_links($links) { update_option('sphotography_friend_links', $links); }
@@ -101,7 +153,7 @@ function sphotography_friend_links_handle_post() {
 		sphotography_update_friend_links($links);
 	} elseif ('refetch' === $action) {
 		$id = (int) ($_POST['fl_id'] ?? 0);
-		foreach ($links as &$l) { if ((int) $l['id'] === $id) { $l['thumb_id'] = 0; } }
+		foreach ($links as &$l) { if ((int) $l['id'] === $id) { $l['thumb_id'] = 0; $l['thumb_attempts'] = 0; } }
 		unset($l);
 		sphotography_update_friend_links($links);
 		sphotography_schedule_friend_meta($id);
@@ -135,10 +187,7 @@ function sphotography_render_friend_links_board() {
 	}
 
 	$links = sphotography_get_friend_links();
-	usort($links, function ($a, $b) {
-		if ((int) $a['pinned'] !== (int) $b['pinned']) return (int) $b['pinned'] - (int) $a['pinned'];
-		return (int) $a['added'] - (int) $b['added'];
-	});
+	sphotography_sort_friend_links($links);
 	$apps = sphotography_get_friend_link_applications();
 	$notify = sphotography_get_friend_link_notify();
 	// v1.4.0: stashed form values from a failed add (format error or connect
@@ -177,9 +226,11 @@ function sphotography_render_friend_links_board() {
 			<?php if ( empty( $links ) ) : ?>
 				<p style="color:var(--sp-text-muted);"><?php esc_html_e( '还没有友链。', 'sphotography' ); ?></p>
 			<?php else : ?>
-				<table class="widefat striped" style="margin-bottom:20px;">
+				<p class="description">拖住左侧手柄上下排序，松开自动保存；拖拽后以手动顺序为准并清除旧置顶。仍可使用置顶按钮。</p>
+                <p id="sp-fl-status" role="status" aria-live="polite"></p>
+                <table id="sp-fl-table" class="widefat striped" style="margin-bottom:20px;">
 					<thead><tr>
-						<th><?php esc_html_e( '缩略图', 'sphotography' ); ?></th>
+						<th>排序</th><th><?php esc_html_e( '缩略图', 'sphotography' ); ?></th>
 						<th><?php esc_html_e( '名称', 'sphotography' ); ?></th>
 						<th><?php esc_html_e( '网址', 'sphotography' ); ?></th>
 						<th><?php esc_html_e( '操作', 'sphotography' ); ?></th>
@@ -188,12 +239,14 @@ function sphotography_render_friend_links_board() {
 					<?php foreach ( $links as $l ) :
 						$thumb = $l['thumb_id'] ? wp_get_attachment_image_src( $l['thumb_id'], 'thumbnail' ) : false;
 					?>
-						<tr>
-							<td><?php if ( $thumb ) : ?><img src="<?php echo esc_url( $thumb[0] ); ?>" style="width:60px;height:45px;object-fit:cover;border-radius:4px;"><?php else : ?>—<?php endif; ?></td>
+						<tr data-id="<?php echo (int) $l['id']; ?>">
+                            <td><span class="sp-fl-drag dashicons dashicons-menu" style="cursor:grab" title="拖拽排序"></span></td>
+                            <td class="sp-fl-thumb"><?php if ( $thumb ) : ?><img src="<?php echo esc_url( $thumb[0] ); ?>" style="width:60px;height:45px;object-fit:cover;border-radius:4px;"><?php else : ?>—<?php endif; ?></td>
 							<td><?php echo esc_html( $l['name'] ? $l['name'] : '（待抓取）' ); ?><?php echo ! empty( $l['pinned'] ) ? ' <span class="dashicons dashicons-sticky" title="置顶"></span>' : ''; ?></td>
 							<td><a href="<?php echo esc_url( $l['url'] ); ?>" target="_blank" rel="noopener"><?php echo esc_html( $l['url'] ); ?></a></td>
 							<td>
-								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline"><?php wp_nonce_field( 'sphotography_friend_links' ); ?><input type="hidden" name="action" value="sphotography_friend_links_action"><input type="hidden" name="sp_fl_action" value="toggle_pin"><input type="hidden" name="fl_id" value="<?php echo (int) $l['id']; ?>"><button class="button button-small"><?php echo ! empty( $l['pinned'] ) ? esc_html__( '取消置顶', 'sphotography' ) : esc_html__( '置顶', 'sphotography' ); ?></button></form>
+								<button type="button" class="button button-small sp-fl-change-thumb">更换缩略图</button>
+                                <form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline"><?php wp_nonce_field( 'sphotography_friend_links' ); ?><input type="hidden" name="action" value="sphotography_friend_links_action"><input type="hidden" name="sp_fl_action" value="toggle_pin"><input type="hidden" name="fl_id" value="<?php echo (int) $l['id']; ?>"><button class="button button-small"><?php echo ! empty( $l['pinned'] ) ? esc_html__( '取消置顶', 'sphotography' ) : esc_html__( '置顶', 'sphotography' ); ?></button></form>
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline"><?php wp_nonce_field( 'sphotography_friend_links' ); ?><input type="hidden" name="action" value="sphotography_friend_links_action"><input type="hidden" name="sp_fl_action" value="refetch"><input type="hidden" name="fl_id" value="<?php echo (int) $l['id']; ?>"><button class="button button-small"><?php esc_html_e( '重新获取缩略图', 'sphotography' ); ?></button></form>
 								<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline" onsubmit="return confirm('确定删除此友链？');"><?php wp_nonce_field( 'sphotography_friend_links' ); ?><input type="hidden" name="action" value="sphotography_friend_links_action"><input type="hidden" name="sp_fl_action" value="delete"><input type="hidden" name="fl_id" value="<?php echo (int) $l['id']; ?>"><button class="button button-small button-link-delete"><?php esc_html_e( '删除', 'sphotography' ); ?></button></form>
 							</td>
@@ -422,10 +475,7 @@ function sphotography_register_friend_links_routes() {
 add_action('rest_api_init', 'sphotography_register_friend_links_routes');
 function sphotography_rest_list_friend_links($request) {
 	$links = sphotography_get_friend_links();
-	usort($links, function ($a, $b) {
-		if ((int) $a['pinned'] !== (int) $b['pinned']) return (int) $b['pinned'] - (int) $a['pinned'];
-		return (int) $a['added'] - (int) $b['added'];
-	});
+	sphotography_sort_friend_links($links);
 	$items = array();
 	foreach ($links as $link) {
 		if (empty($link['url'])) continue;
@@ -512,6 +562,19 @@ function sphotography_fetch_friend_meta_handler($link_id) {
 			}
 		}
 	}
-	sphotography_update_friend_links($links);
+    // Merge into fresh data so a slow fetch cannot overwrite manual edits or sorting.
+    wp_cache_delete('sphotography_friend_links', 'options');
+    wp_cache_delete('alloptions', 'options');
+    $latest = sphotography_get_friend_links();
+    foreach ($latest as &$current) {
+        if ((int) $current['id'] !== (int) $link_id || $current['url'] !== $link['url']) continue;
+        if (empty($current['name'])) $current['name'] = $link['name'];
+        if (empty($current['thumb_id'])) {
+            $current['thumb_id'] = $link['thumb_id'];
+            $current['thumb_attempts'] = $link['thumb_attempts'] ?? 0;
+        }
+    }
+    unset($current);
+    sphotography_update_friend_links($latest);
 }
 add_action('sphotography_fetch_friend_meta', 'sphotography_fetch_friend_meta_handler');

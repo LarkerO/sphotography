@@ -16,6 +16,7 @@ function sphotography_get_default_settings() {
         'night_mode'          => 'system',
         'dark_scheme'         => 'default',
         'frontend_font'       => 'serif',
+        'frontend_font_css'   => '',
         'cursor_style'        => 'rounded',
         'admin_global_style'  => true,
         // ② Card Style
@@ -87,6 +88,9 @@ function sphotography_get_default_settings() {
         'reverse_geocode_key'      => '',
         // ⑧ Footer
         'footer_content'      => '',
+        'icp_number' => '',
+        'security_number' => '',
+        'security_url' => '',
         // ⑧b Announcement (v1.4.4 item 6). Markdown notice shown in a top-right
         // panel; auto-opens on load unless disabled or dismissed for this content.
         'announcement_enabled'   => false,
@@ -148,7 +152,7 @@ function sphotography_sanitize_settings( $input ) {
     $sanitized['night_mode'] = in_array( $input['night_mode'], $allowed_night, true ) ? $input['night_mode'] : $defaults['night_mode'];
     $allowed_dark = array( 'default', 'blue', 'purple' );
     $sanitized['dark_scheme'] = in_array( $input['dark_scheme'], $allowed_dark, true ) ? $input['dark_scheme'] : $defaults['dark_scheme'];
-    $allowed_font = array( 'serif', 'wordpress', 'pingfang', 'songti' ); // v1.4.7 (item 6): +苹方/宋体
+    $allowed_font = array( 'serif', 'wordpress', 'pingfang', 'songti', 'misans', 'harmonyos' ); // v1.4.7 (item 6): +苹方/宋体
     $sanitized['frontend_font'] = in_array( $input['frontend_font'], $allowed_font, true ) ? $input['frontend_font'] : $defaults['frontend_font'];
     $sanitized['admin_global_style'] = ! empty( $input['admin_global_style'] ) ? 1 : 0;
     $allowed_cursor = array( 'rounded', 'dot', 'normal' );
@@ -249,6 +253,10 @@ function sphotography_sanitize_settings( $input ) {
 
     // ⑧ Footer. This settings page is restricted to trusted administrators.
     // Raw HTML (including scripts) is intentionally supported by the theme.
+    $sanitized['frontend_font_css'] = esc_url_raw( $input['frontend_font_css'] ?? '', array( 'http', 'https' ) );
+    $sanitized['icp_number'] = sanitize_text_field( $input['icp_number'] ?? '' );
+    $sanitized['security_number'] = sanitize_text_field( $input['security_number'] ?? '' );
+    $sanitized['security_url'] = esc_url_raw( $input['security_url'] ?? '', array( 'http', 'https' ) );
     $sanitized['footer_content'] = (string) $input['footer_content'];
 
     // ⑨ CDN
@@ -577,11 +585,18 @@ function sphotography_render_settings_page() {
                             <option value="serif" <?php selected( $values['frontend_font'], 'serif' ); ?>><?php _e( '衬线字体（Noto Serif SC，默认）', 'sphotography' ); ?></option>
                             <option value="wordpress" <?php selected( $values['frontend_font'], 'wordpress' ); ?>><?php _e( 'WordPress 默认字体（系统无衬线）', 'sphotography' ); ?></option>
                             <option value="pingfang" <?php selected( $values['frontend_font'], 'pingfang' ); ?>><?php _e( '苹方 PingFang（苹果系统原生无衬线）', 'sphotography' ); ?></option>
+                            <option value="misans" <?php selected( $values['frontend_font'], 'misans' ); ?>>MiSans</option>
+                            <option value="harmonyos" <?php selected( $values['frontend_font'], 'harmonyos' ); ?>>HarmonyOS Sans</option>
                             <option value="songti" <?php selected( $values['frontend_font'], 'songti' ); ?>><?php _e( '宋体 Songti（跨平台衬线）', 'sphotography' ); ?></option>
                         </select>
                         <p class="sphotography-desc"><?php _e( '选择前端全局字体。衬线字体呈现更优雅的排版；WordPress 默认字体使用系统无衬线字体栈，观感更现代；苹方为苹果系统内置字体，仅在 macOS/iOS/iPadOS 上原生显示，Windows/安卓等设备会自动回退到微软雅黑等系统无衬线字体（苹方受版权保护，无法内嵌为网页字体）；宋体使用系统宋体（Windows 的 SimSun、Mac 的 Songti SC），并以 Noto Serif SC 作为通用回退，跨平台可用。全局生效，默认衬线字体。', 'sphotography' ); ?></p>
                     </div>
 
+                    <div class="sphotography-field">
+                        <label class="sphotography-label" for="sp-font-css">MiSans / HarmonyOS Sans 字体 CSS 地址（可选）</label>
+                        <input type="url" id="sp-font-css" name="sphotography[frontend_font_css]" value="<?php echo esc_attr( $values['frontend_font_css'] ); ?>" class="regular-text">
+                        <p class="sphotography-desc">仅选中这两种字体时加载。留空使用固定版本的第三方 jsDelivr 字体源；可填写自托管 CSS 地址（保留 MiSans / HarmonyOS Sans SC 字体名称与相对字体文件路径）。加载失败自动回退系统字体。MiSans 使用按字符切片的网络字体。</p>
+                    </div>
                     <!-- Cursor style (v1.2.8) -->
                     <div class="sphotography-field">
                         <label class="sphotography-label" for="sphotography-cursor-style"><?php _e( '鼠标光标样式', 'sphotography' ); ?></label>
@@ -1455,13 +1470,18 @@ function sphotography_render_settings_page() {
                 </div>
                 <div class="sphotography-module-body">
                     <div class="sphotography-field">
+                        <?php foreach ( array( 'icp_number' => 'ICP备案号', 'security_number' => '公安网安备案号', 'security_url' => '公安网安备案查询链接（完整 URL）' ) as $key => $label ) : ?>
+                        <p><label for="sp-<?php echo esc_attr( $key ); ?>"><?php echo esc_html( $label ); ?></label><br>
+                        <input class="regular-text" id="sp-<?php echo esc_attr( $key ); ?>" type="<?php echo 'security_url' === $key ? 'url' : 'text'; ?>" name="sphotography[<?php echo esc_attr( $key ); ?>]" value="<?php echo esc_attr( $values[$key] ); ?>"></p>
+                        <?php endforeach; ?>
+                        <p class="sphotography-desc">备案号留空时不显示；ICP 链接指向工信部，网安链接可填写备案查询页，未填写时自动提取备案号中的数字生成链接。</p>
                         <label class="sphotography-label" for="sphotography-footer-content"><?php _e( '页脚内容', 'sphotography' ); ?></label>
                         <textarea id="sphotography-footer-content"
                                   name="sphotography[footer_content]"
                                   rows="3"
                                   style="max-width:100%;font-family:monospace;"
                                   placeholder="<?php esc_attr_e( '例如：© 2026 Your Name. All rights reserved.', 'sphotography' ); ?>"><?php echo esc_textarea( $values['footer_content'] ); ?></textarea>
-                        <p class="sphotography-desc"><?php _e( '留空则隐藏页脚。支持可信管理员输入的 HTML 与脚本标签，显示在地图底部中央位置。', 'sphotography' ); ?></p>
+                        <p class="sphotography-desc"><?php _e( '备案号与内容均留空则隐藏页脚。支持可信管理员输入的 HTML 与脚本标签，显示在地图底部中央位置。', 'sphotography' ); ?></p>
                     </div>
                 </div>
                 </div>
@@ -1924,7 +1944,7 @@ function sphotography_admin_enqueue_settings( $hook ) {
     // accent, light/dark following the night_mode setting (the scheme body
     // class is added in admin/admin-style.php). Effects are kept subtle.
     $sp_primary = sphotography_admin_primary_color();
-    $sp_serif   = "'Noto Serif SC', Georgia, 'Times New Roman', 'Songti SC', serif";
+    $sp_serif   = sphotography_selected_font_stack();
     // v1.4.2: 大板块卡片圆角跟随前台 card_radius 主题设置（而非固定 14px），
     // 让后台配置卡片与前台面板的圆角观感一致。限幅 0–40 与前端字段一致。
     $sp_card_radius = max( 0, min( 40, (int) get_theme_mod( 'sphotography_card_radius', 16 ) ) );
@@ -2740,13 +2760,14 @@ function sphotography_admin_enqueue_settings( $hook ) {
     wp_enqueue_script(
         'sphotography-admin-settings',
         get_template_directory_uri() . '/assets/js/admin-settings.js',
-        array( 'jquery', 'wp-color-picker' ),
+        array( 'jquery', 'wp-color-picker', 'jquery-ui-sortable' ),
         SPHOTOGRAPHY_VERSION,
         true
     );
 
     wp_localize_script( 'sphotography-admin-settings', 'SphotographyAdmin', array(
         'ajaxUrl'        => admin_url( 'admin-ajax.php' ),
+        'friendNonce' => wp_create_nonce( 'sphotography_friend_links' ),
         'currentVersion' => SPHOTOGRAPHY_VERSION,
         'updateUrl'      => 'https://raw.githubusercontent.com/ShirazuNagisa/sphotography/master/version.json',
         'releaseUrl'     => 'https://github.com/ShirazuNagisa/sphotography/releases',

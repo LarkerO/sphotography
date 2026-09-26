@@ -135,7 +135,12 @@ if ( ! $sphotography_sidebar_default_open ) {
             </div>
             <!-- 丰富统计面板（v1.4.8：点击展开页按钮时向上展开，JS 通过 /stats 填充） -->
             <div class="sidebar-stats-panel" id="sidebar-stats-panel" aria-hidden="true"></div>
-            <div class="sidebar-profile-bar">
+            <div class="sidebar-profile-bar sidebar-footer">
+            <button id="sidebar-toggle" class="sidebar-toggle-mini" aria-label="<?php esc_attr_e( 'Toggle sidebar', 'sphotography' ); ?>">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+            </button>
                 <button type="button" class="sidebar-profile-row" id="sidebar-profile-toggle" aria-expanded="false" aria-controls="sidebar-profile-panel" aria-label="<?php esc_attr_e( '展开个人信息', 'sphotography' ); ?>">
                     <?php if ( $sp_avatar ) : ?>
                         <img src="<?php echo esc_url( $sp_avatar ); ?>" alt="" class="sidebar-profile-avatar">
@@ -151,18 +156,12 @@ if ( ! $sphotography_sidebar_default_open ) {
             </div>
         </div>
 
-        <!-- 底部：折叠按钮 + 品牌 -->
-        <div class="sidebar-footer">
-            <button id="sidebar-toggle" class="sidebar-toggle-mini" aria-label="<?php esc_attr_e( 'Toggle sidebar', 'sphotography' ); ?>">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="15 18 9 12 15 6"></polyline>
-                </svg>
-            </button>
+        <template id="sidebar-theme-credit"><div class="sidebar-theme-credit">
             <span class="sidebar-brand">Theme Sphotography</span>
             <a id="sidebar-github" href="https://github.com/ShirazuNagisa/sphotography" target="_blank" rel="noopener noreferrer" class="sidebar-github-link" aria-label="GitHub repository">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
             </a>
-        </div>
+        </div></template>
     </aside>
 
     <!-- 侧边栏展开按钮（折叠时可见） -->
@@ -254,11 +253,29 @@ if ( ! $sphotography_sidebar_default_open ) {
     <!-- v1.4.8：右下角个人信息卡片已移除，边栏一行为唯一展示方式 -->
 
     <!-- 页脚 -->
-    <?php $footer_content = get_theme_mod( 'sphotography_footer_content', '' ); ?>
-    <?php if ( ! empty( $footer_content ) ) : ?>
+    <?php
+    $footer_content = get_theme_mod( 'sphotography_footer_content', '' );
+    $registrations = array();
+    $icp = sphotography_get_mod( 'icp_number' );
+    $security = sphotography_get_mod( 'security_number' );
+    if ( $icp ) $registrations[] = array( $icp, 'https://beian.miit.gov.cn/' );
+    if ( $security ) {
+        $security_url = sphotography_get_mod( 'security_url' );
+        $digits = preg_replace( '/[^0-9]/', '', $security );
+        if ( ! $security_url ) $security_url = $digits ? 'https://beian.mps.gov.cn/#/query/webSearch?code=' . $digits : 'https://beian.mps.gov.cn/';
+        $registrations[] = array( $security, $security_url );
+    }
+    ?>
+    <?php if ( ! empty( $footer_content ) || $registrations ) : ?>
     <div id="map-footer" class="map-footer glass-panel">
         <?php // 由受信任管理员保存，不转义 ?>
-        <div class="footer-content"><?php echo $footer_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div>
+        <div class="footer-content">
+            <?php foreach ( $registrations as $i => $registration ) : ?>
+                <?php if ( $i ) : ?><span aria-hidden="true">|</span><?php endif; ?>
+                <a class="footer-registration" href="<?php echo esc_url( $registration[1] ); ?>" target="_blank" rel="noopener noreferrer"><?php echo esc_html( $registration[0] ); ?></a>
+            <?php endforeach; ?>
+            <?php if ( $registrations && ! empty( $footer_content ) ) : ?><span aria-hidden="true">|</span><?php endif; ?>
+            <div class="footer-custom"><?php echo $footer_content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?></div></div>
     </div>
     <?php endif; ?>
 

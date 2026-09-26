@@ -592,3 +592,52 @@
         }
     });
 })(jQuery);
+
+// 1.6 SP: persistent friend thumbnails and ordering.
+jQuery(function ($) {
+    var table = $('#sp-fl-table'), body = table.find('tbody');
+    var status = $('#sp-fl-status'), config = window.SphotographyAdmin || {};
+    var busy = false;
+    function save(data) {
+        return $.ajax({ url: config.ajaxUrl, method: 'POST', dataType: 'json', data: $.extend({
+            action: 'sphotography_friend_edit', nonce: config.friendNonce
+        }, data) });
+    }
+    function message(error) {
+        return error && error.data && error.data.message || '保存失败，请重试。';
+    }
+    table.on('click', '.sp-fl-change-thumb', function () {
+        if (busy || !window.wp || !wp.media) return;
+        var button = $(this), row = button.closest('tr');
+        var frame = wp.media({title: '更换友链缩略图', library: {type: 'image'}, multiple: false, button: {text: '使用此图片'}});
+        frame.on('select', function () {
+            var attachment = frame.state().get('selection').first().toJSON();
+            busy = true; button.prop('disabled', true); body.sortable('disable'); status.text('正在保存缩略图…');
+            save({operation: 'thumbnail', id: row.data('id'), thumb_id: attachment.id}).done(function (result) {
+                if (!result.success) { status.text(message(result)); return; }
+                row.find('.sp-fl-thumb').empty().append($('<img>', {src: result.data.url, alt: ''}).css({width: 60, height: 45, objectFit: 'cover', borderRadius: 4}));
+                status.text('缩略图已保存。');
+            }).fail(function (xhr) { status.text(message(xhr.responseJSON)); }).always(function () {
+                busy = false; button.prop('disabled', false); body.sortable('enable');
+            });
+        });
+        frame.open();
+    });
+    if (body.length) body.sortable({
+        handle: '.sp-fl-drag', axis: 'y', items: '> tr',
+        helper: function (event, row) { row.children().each(function () { $(this).width($(this).width()); }); return row; },
+        update: function () {
+            busy = true; status.text('正在保存顺序…');
+            var ids = body.children().map(function () { return $(this).data('id'); }).get();
+            body.sortable('disable');
+            save({operation: 'reorder', ids: ids}).done(function (result) {
+                if (!result.success) { body.sortable('cancel'); status.text(message(result)); return; }
+                table.find('.dashicons-sticky').remove();
+                table.find('input[value="toggle_pin"]').closest('form').find('button').text('置顶');
+                status.text('顺序已保存。');
+            }).fail(function (xhr) { body.sortable('cancel'); status.text(message(xhr.responseJSON)); }).always(function () {
+                busy = false; body.sortable('enable');
+            });
+        }
+    });
+});

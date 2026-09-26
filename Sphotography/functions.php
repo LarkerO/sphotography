@@ -903,7 +903,7 @@ function sphotography_enqueue_scripts() {
         'sphotography-qrcode',
         get_template_directory_uri() . '/assets/js/qrcode.js',
         array(),
-        '1.5.01',
+        SPHOTOGRAPHY_VERSION,
         true
     );
 
@@ -1190,3 +1190,17 @@ function sphotography_rrmdir( $dir ) {
     }
     rmdir( $dir );
 }
+
+// Load only the selected webfont; administrators may use a self-hosted stylesheet.
+function sphotography_enqueue_selected_webfont() {
+    $font = sphotography_get_mod( 'frontend_font' );
+    $sources = array(
+        'misans' => 'https://cdn.jsdelivr.net/npm/misans-webfont@4.3.1/misans-style.css',
+        'harmonyos' => 'https://cdn.jsdelivr.net/gh/IKKI2000/harmonyos-fonts@620f0e29dbaf9c8387b71ef34eb20dfb8b0fcb6b/css/harmonyos_sans_sc.css',
+    );
+    if ( isset( $sources[$font] ) ) {
+        $url = sphotography_get_mod( 'frontend_font_css' );
+        wp_enqueue_style( 'sphotography-webfont', $url ? $url : $sources[$font], array(), null );
+    }
+}
+add_action( 'wp_enqueue_scripts', 'sphotography_enqueue_selected_webfont' );

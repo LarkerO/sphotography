@@ -1343,9 +1343,13 @@
             center:CONFIG.center, zoom:CONFIG.zoom,
             maxZoom:CONFIG.maxZoom, minZoom:CONFIG.minZoom,
             attributionControl:true,
+            bearing: 0, pitch: 0, maxPitch: 0,
+            dragRotate: false, pitchWithRotate: false, touchPitch: false,
         });
-        state.map.addControl(new maplibregl.NavigationControl({showCompass:true}),'top-right');
-        // Stacks in top-right immediately below the zoom/compass group.
+        state.map.touchZoomRotate.disableRotation();
+        state.map.keyboard.disableRotation();
+        state.map.addControl(new maplibregl.NavigationControl({showCompass:false}),'top-right');
+        // Stacks in top-right immediately below the zoom group.
         state.map.addControl(new NightSwitchControl(), 'top-right');
         // v1.4.3: language switch stacks directly below the night switch. Only
         // shown when the translation feature is on (v1.4.4: dedicated ai_translate
@@ -7419,6 +7423,8 @@
         var bioText = bioEl ? (bioEl.textContent || '').trim() : '';
         var linksEl = srcPanel ? srcPanel.querySelector('.profile-expand-links') : null;
         var linksHtml = (linksEl && linksEl.children.length) ? linksEl.innerHTML : '';
+        var creditTemplate = document.getElementById('sidebar-theme-credit');
+        var creditHtml = creditTemplate ? creditTemplate.innerHTML : '';
 
         // Layout: a top-anchored scrolling region (current stats, unchanged
         // proportions, with bio inserted under the name) + a sticky links footer
@@ -7442,6 +7448,7 @@
             +     '<div class="stats-row"><span class="stats-row-label">' + escapeHtml(t('本日访问')) + '</span><span class="stats-row-value">' + formatCount(s.visitsToday || 0) + '</span></div>'
             +     '<div class="stats-row"><span class="stats-row-label">' + escapeHtml(t('累计访问')) + '</span><span class="stats-row-value">' + formatCount(s.visitsTotal || 0) + '</span></div>'
             +     '<div class="stats-row"><span class="stats-row-label">' + escapeHtml(t('已运行')) + '</span><span class="stats-row-value stats-uptime-value" id="stats-uptime">—</span></div>'
+            +     creditHtml
             +   '</div>'
             +   (linksHtml ? '<div class="stats-links-footer"><div class="profile-expand-links">' + linksHtml + '</div></div>' : '')
             + '</div>';

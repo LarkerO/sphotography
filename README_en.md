@@ -63,6 +63,19 @@ Sphotography is open-sourced under the [GPL v2.0 or later](https://github.com/Sh
 
 # Changelog
 
+## 20260926 v1.6 SP
+
++ Merge profile controls into the sidebar bottom row and move Theme / GitHub below uptime to give articles more room.
++ Match map controls to sidebar styling, remove the compass, and disable mouse, touch and keyboard rotation to keep north up.
++ Apply the selected font and webfont source to the WordPress global admin appearance and theme settings.
+
++ Replace friend-link thumbnails at any time using the media library; background fetching preserves manual changes.
++ Drag friend-link handles to reorder and save automatically. Manual sorting clears previous pins; pin buttons remain available. Failed saves restore the previous order.
++ Add ICP and public-security registration numbers and links before custom footer content. Empty items are hidden and narrow screens wrap.
++ Footer links are white without underlines and turn gray on hover or keyboard focus.
++ Add MiSans and HarmonyOS Sans, loaded only when selected from pinned third-party jsDelivr sources, with an optional self-hosted CSS URL and system-font fallbacks. MiSans uses character subsets; HarmonyOS Sans SC uses larger full-font files.
++ Fix font inheritance in home and expanded-page search inputs and placeholders; reset screenshot retry counts on refetch and preserve ordering during background fetches.
+
 ## 20260806 v1.5.01
 
 + 修复 分享链接直达单篇文章时无法渲染内容的问题（单文章 URL 现在会加载地图资源，并自动打开对应文章面板）

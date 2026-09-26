@@ -56,13 +56,12 @@ function sphotography_admin_enqueue_appearance( $hook ) {
         return;
     }
 
-    // Elegant serif, matching the frontend.
-    wp_enqueue_style(
-        'sphotography-admin-font',
-        'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap',
-        array(),
-        null
-    );
+    $font = sphotography_get_mod( 'frontend_font' );
+    $url = in_array( $font, array( 'serif', 'songti' ), true )
+        ? 'https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;500;600;700&display=swap' : false;
+    wp_register_style( 'sphotography-admin-font', $url, array(), SPHOTOGRAPHY_VERSION );
+    wp_enqueue_style( 'sphotography-admin-font' );
+    sphotography_enqueue_selected_webfont();
 
     // Only the whole-admin theming is gated behind the toggle. The settings
     // page brings its own component styles (theme-settings.php).
@@ -82,7 +81,7 @@ add_action( 'admin_enqueue_scripts', 'sphotography_admin_enqueue_appearance' );
  */
 function sphotography_admin_global_css() {
     $primary = sphotography_admin_primary_color();
-    $serif   = "'Noto Serif SC', Georgia, 'Times New Roman', 'Songti SC', serif";
+    $serif   = sphotography_selected_font_stack();
 
     // The variable blocks below are reused for both explicit dark mode and the
     // system-preference branch, so define them once as strings.
@@ -134,7 +133,12 @@ function sphotography_admin_global_css() {
     body.sphotography-admin-global label,
     body.sphotography-admin-global h1,
     body.sphotography-admin-global h2,
-    body.sphotography-admin-global h3 {
+    body.sphotography-admin-global h3,
+    body.sphotography-admin-global h4,
+    body.sphotography-admin-global h5,
+    body.sphotography-admin-global h6,
+    body.sphotography-admin-global button,
+    body.sphotography-admin-global .button {
         font-family: {$serif};
     }
     body.sphotography-admin-global .wrap h1,
@@ -579,3 +583,15 @@ function sphotography_admin_block_canvas_dark() {
     wp_add_inline_style( 'sphotography-editor-canvas-dark', $css );
 }
 add_action( 'enqueue_block_assets', 'sphotography_admin_block_canvas_dark' );
+// Fixed, trusted CSS stacks: use the same font selection throughout the admin.
+function sphotography_selected_font_stack() {
+    $stacks = array(
+        'serif' => "'Noto Serif SC', 'Songti SC', 'STSong', Georgia, 'Times New Roman', serif",
+        'wordpress' => '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif',
+        'pingfang' => '"PingFang SC", "PingFang TC", -apple-system, BlinkMacSystemFont, "Microsoft YaHei", "Hiragino Sans GB", "Segoe UI", sans-serif',
+        'songti' => '"Songti SC", "STSong", "SimSun", "NSimSun", "Noto Serif SC", Georgia, serif',
+        'misans' => '"MiSans", "PingFang SC", "Microsoft YaHei", sans-serif',
+        'harmonyos' => '"HarmonyOS Sans SC", "HarmonyOS Sans", "PingFang SC", "Microsoft YaHei", sans-serif',
+    );
+    return $stacks[sphotography_get_mod( 'frontend_font' )] ?? $stacks['serif'];
+}

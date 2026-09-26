@@ -190,7 +190,9 @@ function sphotography_body_classes( $classes ) {
     // cross-platform system serif + Noto Serif SC fallback). All are system-font
     // stacks — no bundled webfonts (PingFang is proprietary).
     $frontend_font = sphotography_get_mod( 'frontend_font' );
-    if ( 'wordpress' === $frontend_font ) {
+    if ( in_array( $frontend_font, array( 'misans', 'harmonyos' ), true ) ) {
+        $classes[] = 'sphotography-font-' . $frontend_font;
+    } elseif ( 'wordpress' === $frontend_font ) {
         $classes[] = 'sphotography-font-wordpress';
     } elseif ( 'pingfang' === $frontend_font ) {
         $classes[] = 'sphotography-font-pingfang';

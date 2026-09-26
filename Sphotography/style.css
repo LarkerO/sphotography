@@ -4,7 +4,7 @@ Theme URI: https://example.com/sphotography
 Author: Shirazu Nagisa
 Author URI: https://example.com
 Description: A fullscreen map-based photography theme with article sidebar and photo grid.
-Version: 1.5.01
+Version: 1.6 SP
 License: GPL v2 or later
 Text Domain: sphotography
 */
@@ -4351,20 +4351,29 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
    ============================================ */
 .maplibregl-ctrl-top-right { top: 12px; right: 12px; }
 .maplibregl-ctrl-group {
-    background: rgba(20,20,20,0.75) !important;
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255,255,255,0.06) !important;
-    border-radius: 10px !important;
+    background: var(--panel-bg) !important;
+    backdrop-filter: var(--panel-blur);
+    -webkit-backdrop-filter: var(--panel-blur);
+    border: var(--panel-border) !important;
+    border-radius: var(--panel-radius) !important;
     overflow: hidden;
     box-shadow: var(--shadow-subtle);
 }
 .maplibregl-ctrl-group button {
     background:transparent !important;
-    border-color:rgba(255,255,255,0.06) !important;
+    border-color: var(--color-border) !important;
     transition: background var(--duration-fast) ease;
 }
-.maplibregl-ctrl-group button:hover { background:rgba(255,255,255,0.08) !important; }
-.maplibregl-ctrl-group button span { filter:invert(1); }
+.maplibregl-ctrl-group button:hover { background: var(--color-surface-hover) !important; }
+.maplibregl-ctrl-group button { width: var(--btn-s); height: var(--btn-s); color: var(--text-secondary); }
+.maplibregl-ctrl-group button:focus-visible { outline: 2px solid var(--primary); outline-offset: -3px; }
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon,
+.maplibregl-ctrl-group button.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon { background-image: none; position: relative; }
+.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon::before,
+.maplibregl-ctrl-zoom-out .maplibregl-ctrl-icon::before { content: ''; position: absolute; left: 11px; right: 11px; top: 17px; height: 2px; background: currentColor; }
+.maplibregl-ctrl-zoom-in .maplibregl-ctrl-icon::after { content: ''; position: absolute; top: 11px; bottom: 11px; left: 17px; width: 2px; background: currentColor; }
+.maplibregl-ctrl-group button:disabled { opacity: .4; }
+.maplibregl-ctrl-group button:hover { color: var(--text-primary); }
 
 /* Night-mode three-segment switch (v1.3.2) — vertical icon buttons stacked
    in the top-right, below the zoom/compass group. */
@@ -4372,20 +4381,20 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 29px;
-    height: 29px;
+    width: var(--btn-s);
+    height: var(--btn-s);
     padding: 0;
-    color: rgba(255,255,255,0.68);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 .sp-night-switch .sp-night-btn + .sp-night-btn {
-    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    border-top: 1px solid var(--color-border) !important;
 }
-.sp-night-switch .sp-night-btn:hover { color: #fff; }
+.sp-night-switch .sp-night-btn:hover { color: var(--text-primary); }
 .sp-night-switch .sp-night-btn.is-active {
     color: var(--primary);
-    background: rgba(255,255,255,0.10) !important;
+    background: var(--color-surface-hover) !important;
 }
 .sp-night-switch .sp-night-btn svg { display: block; }
 
@@ -4395,24 +4404,24 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 29px;
-    height: 29px;
+    width: var(--btn-s);
+    height: var(--btn-s);
     padding: 0;
     font-size: 14px;
     font-weight: 600;
     line-height: 1;
     font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans", "Microsoft YaHei", sans-serif;
-    color: rgba(255,255,255,0.68);
+    color: var(--text-secondary);
     cursor: pointer;
     transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
 }
 .sp-lang-switch .sp-lang-btn + .sp-lang-btn {
-    border-top: 1px solid rgba(255,255,255,0.08) !important;
+    border-top: 1px solid var(--color-border) !important;
 }
-.sp-lang-switch .sp-lang-btn:hover { color: #fff; }
+.sp-lang-switch .sp-lang-btn:hover { color: var(--text-primary); }
 .sp-lang-switch .sp-lang-btn.is-active {
     color: var(--primary);
-    background: rgba(255,255,255,0.10) !important;
+    background: var(--color-surface-hover) !important;
 }
 
 /* Dynamic-content translation states (v1.4.3): dimmed while a block awaits its
@@ -4788,3 +4797,30 @@ body.sp-rounded-cursor-on [contenteditable]:focus { cursor: text !important; }
 .article-panel--instant .article-content {
     transition: none !important;
 }
+
+/* 1.6 SP: theme typography also applies to browser-native form controls. */
+body.sphotography-font-misans {
+    --font-body: 'MiSans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-display: var(--font-body);
+}
+body.sphotography-font-harmonyos {
+    --font-body: 'HarmonyOS Sans SC', 'HarmonyOS Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+    --font-display: var(--font-body);
+}
+input, textarea, select, button { font-family: var(--font-body); }
+.sidebar-search input, .expand-page-search-input { font-family: var(--font-body); }
+.sidebar-search input::placeholder, .expand-page-search-input::placeholder { font-family: inherit; }
+.map-footer { white-space: normal; overflow-wrap: anywhere; color: #fff; background: rgba(15,15,15,.75); }
+.map-footer .footer-content { display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 4px 8px; }
+.map-footer a, .map-footer a:visited { color: #fff; text-decoration: none; transition: color .2s; }
+.map-footer a:hover, .map-footer a:focus-visible { color: #aaa; text-decoration: none; }
+.footer-registration { display: inline-flex; align-items: center; gap: 4px; }
+
+
+/* 1.6 SP: a single bottom row leaves more space for articles. */
+.sidebar-profile { margin: 0; }
+.sidebar-profile-bar.sidebar-footer { padding: 6px 10px 10px; }
+.sidebar-profile-bar .sidebar-profile-row { padding: 6px; gap: 8px; }
+.sidebar-profile-bar .sidebar-profile-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-theme-credit { display: flex; align-items: center; gap: 8px; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--color-border); }
+.sidebar-theme-credit .sidebar-brand { text-align: left; }
