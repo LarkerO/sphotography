@@ -2040,15 +2040,58 @@ button.article-nav-btn:active { transform: scale(0.94); }
 }
 /* Geolocated photos are clickable — they fly the map to their location. */
 .article-content img.article-geo-img { cursor: pointer; }
-/* v1.4.6 (item 5): theme-colored hint under each clickable (geo) photo. */
-.article-content .article-geo-hint {
-    margin: 6px 0 2px;
-    text-align: center;
-    font-size: var(--text-sm, 0.82rem);
-    line-height: 1.4;
-    color: var(--primary);
-    letter-spacing: 0.02em;
-    opacity: 0.9;
+/* Frame-pinned photo tip sits above the reading controls. */
+.article-photo-tip {
+    position: absolute;
+    bottom: 68px;
+    left: 50%;
+    transform: translate(-50%, 6px);
+    width: max-content;
+    max-width: calc(100% - 32px);
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 5px 12px 5px 18px;
+    border-radius: 12px;
+    background: rgba(70, 70, 70, 0.96);
+    color: #fff;
+    font-size: 13px;
+    line-height: 1.5;
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+    pointer-events: none;
+    z-index: 7;
+    opacity: 0;
+    transition: opacity 350ms ease, transform 350ms ease;
+}
+.article-photo-tip.is-visible { opacity: 1; transform: translate(-50%, 0); }
+.article-photo-tip svg { flex: 0 0 100px; }
+.photo-tip-cursor { animation: photo-tip-cursor 3s ease-in-out infinite; }
+.photo-tip-click { transform-origin: 43px 23px; animation: photo-tip-click 3s ease-out infinite; }
+.photo-tip-pin { animation: photo-tip-pin 3s ease-out infinite; }
+.article-photo-tip:not(.is-visible) svg * { animation-play-state: paused; }
+@keyframes photo-tip-cursor {
+    0%, 12% { transform: translate(-24px, -18px); opacity: 0; }
+    22% { opacity: 1; }
+    44%, 50% { transform: translate(0, 0); opacity: 1; }
+    54% { transform: translate(1px, 2px); }
+    60%, 82% { transform: translate(0, 0); opacity: 1; }
+    100% { transform: translate(0, 0); opacity: 0; }
+}
+@keyframes photo-tip-click {
+    0%, 50% { opacity: 0; transform: scale(0.35); }
+    55% { opacity: 0.85; }
+    72%, 100% { opacity: 0; transform: scale(1.4); }
+}
+@keyframes photo-tip-pin {
+    0%, 55% { opacity: 0; transform: translateY(4px); }
+    68%, 86% { opacity: 1; transform: translateY(0); }
+    100% { opacity: 0; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .article-photo-tip { transition: none; }
+    .article-photo-tip svg * { animation: none; }
+    .photo-tip-click { opacity: 0; }
 }
 .article-content p > img,
 .article-content figure { margin: 1.5em 0; }

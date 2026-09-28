@@ -1077,7 +1077,7 @@
             '还没有照片。': 'No photos yet.', '写下留言…支持 Markdown': 'Write a message… Markdown supported',
             '申请已提交，等待站长审核。': 'Submitted — awaiting the admin’s review.',
             '查看照片位置': 'View photo location', '查看对应文章': 'View the article', '查看照片详情': 'Photo details', '上一张': 'Previous', '下一张': 'Next', '退出': 'Close',
-            '点击照片即可查看其位置': 'Tap the photo to see where it was taken',
+            '点击一张照片，定位其位置': 'Click a photo to locate it',
             '文章目录': 'Contents', '本文暂无目录': 'No headings in this article',
             // v1.4.8 (item 2): expand-page + stats panel
             '文章列表': 'Articles', '搜索文章...': 'Search articles...', '没有找到匹配的文章': 'No matching articles',
@@ -1113,7 +1113,7 @@
             '还没有照片。': 'まだ写真がありません。', '写下留言…支持 Markdown': 'メッセージを書く… Markdown 対応',
             '申请已提交，等待站长审核。': '申請を送信しました。管理者の承認をお待ちください。',
             '查看照片位置': '写真の位置を表示', '查看对应文章': '記事を表示', '查看照片详情': '写真の詳細', '上一张': '前へ', '下一张': '次へ', '退出': '閉じる',
-            '点击照片即可查看其位置': 'タップして撮影場所を表示',
+            '点击一张照片，定位其位置': '写真をクリックして撮影場所を表示',
             '文章目录': '目次', '本文暂无目录': 'この記事に見出しはありません',
             // v1.4.8 (item 2): expand-page + stats panel
             '文章列表': '記事一覧', '搜索文章...': '記事を検索...', '没有找到匹配的文章': '一致する記事がありません',
@@ -2701,6 +2701,7 @@
     }
 
     function openArticle(postId, options) {
+        resetArticlePhotoTip();
         var requestPostId = postId;
         closeAllPhotoPanels();
 
@@ -2817,6 +2818,7 @@
             renderComments(requestPostId, post.comment_status);
             animateWindowsOpen(requestPostId);
             setupArticleNav();
+            showArticlePhotoTip();
             refreshArticleToc(); // v1.4.6 (item 10): build TOC now the bar exists
             // Count the view (de-duplicated client-side) and reflect the fresh
             // number in the meta line once the server confirms.
@@ -4244,20 +4246,8 @@
                     event.stopPropagation();
                     closeAllSidePanels(); // don't let 友链/留言 obscure the fly-to
                     flyMapToPhoto(geo.coords);
+                    dismissArticlePhotoTip();
                 });
-                // v1.4.6 (item 5): theme-colored hint under each clickable photo.
-                // Anchor after the image's link wrapper (if any) so the hint isn't
-                // itself a link, and guard against double-insertion on re-wire.
-                var host = (img.parentNode && img.parentNode.tagName === 'A') ? img.parentNode : img;
-                if (host.parentNode) {
-                    var nx = host.nextSibling;
-                    if (!(nx && nx.nodeType === 1 && nx.classList && nx.classList.contains('article-geo-hint'))) {
-                        var hint = document.createElement('div');
-                        hint.className = 'article-geo-hint';
-                        hint.textContent = t('点击照片即可查看其位置');
-                        host.parentNode.insertBefore(hint, host.nextSibling);
-                    }
-                }
             })(imgs[i]);
         }
     }
@@ -4407,6 +4397,41 @@
     //     extends below the panel bottom.
     // ---------------------------------------------------------------
     var SP_NAV_SCROLL_MS = 640; // 中等偏快
+    var articlePhotoTipTimer = null;
+    var articlePhotoTipScrollTop = 0;
+    function resetArticlePhotoTip() {
+        clearTimeout(articlePhotoTipTimer);
+        articlePhotoTipTimer = null;
+        if (dom.articlePhotoTip) dom.articlePhotoTip.remove();
+        dom.articlePhotoTip = null;
+    }
+
+    function dismissArticlePhotoTip() {
+        if (!dom.articlePhotoTip || articlePhotoTipTimer !== null) return;
+        articlePhotoTipTimer = setTimeout(function () {
+            if (dom.articlePhotoTip) dom.articlePhotoTip.classList.remove('is-visible');
+        }, 1500);
+    }
+
+    function showArticlePhotoTip() {
+        resetArticlePhotoTip();
+        if (state.isMobile || !dom.articleNavOverlay) return;
+        var tip = document.createElement('div');
+        tip.className = 'article-photo-tip';
+        var label = document.createElement('span');
+        label.textContent = t('点击一张照片，定位其位置');
+        tip.appendChild(label);
+        tip.insertAdjacentHTML('beforeend', '<svg viewBox="0 0 100 52" width="100" height="52" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="36" y="13" width="33" height="26" rx="4"/><circle cx="59" cy="21" r="2.5"/><path d="m39 35 9-10 8 8 4-4 6 6"/><circle class="photo-tip-click" cx="43" cy="23" r="9"/><g class="photo-tip-pin"><path d="M88 22c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="80" cy="22" r="2.5"/></g><path class="photo-tip-cursor" d="m43 23 3 18 4-6 7-1Z" fill="currentColor" stroke="#555" stroke-width="1"/></svg>');
+        dom.articleNavOverlay.appendChild(tip);
+        dom.articlePhotoTip = tip;
+        articlePhotoTipScrollTop = dom.articlePanel.scrollTop;
+        requestAnimationFrame(function () {
+            requestAnimationFrame(function () {
+                if (dom.articlePhotoTip === tip) tip.classList.add('is-visible');
+            });
+        });
+    }
+
     function buildArticleNav() {
         if (dom.articleNavBuilt) return;
         var panel = dom.articlePanel;
@@ -4530,6 +4555,8 @@
 
         var scheduled = false;
         panel.addEventListener('scroll', function () {
+            if (panel.scrollTop > articlePhotoTipScrollTop) dismissArticlePhotoTip();
+            articlePhotoTipScrollTop = panel.scrollTop;
             if (scheduled) return;
             scheduled = true;
             requestAnimationFrame(function () {
@@ -4567,6 +4594,7 @@
     }
 
     function hideArticleNav() {
+        resetArticlePhotoTip();
         if (dom.articleNavOverlay) dom.articleNavOverlay.classList.remove('is-active');
         if (dom.articleNavTop) dom.articleNavTop.classList.remove('is-visible');
         if (dom.articleNavBottom) dom.articleNavBottom.classList.remove('is-visible');
